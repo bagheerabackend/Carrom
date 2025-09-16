@@ -1,0 +1,61 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: carrom_backend
+    ports:
+      - "8000:8000"
+    command: >
+      uvicorn BagheeraCarrom.asgi:application --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/BagheeraCarrom
+      - pip_cache:/root/.cache/pip
+    depends_on:
+      - migrate_db
+      # - db  # Uncomment if using PostgreSQL or another DB
+
+  migrate_db:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: carrom_backend_migration
+    command: >
+      sh -c "python3 manage.py makemigrations --noinput &&
+             python3 manage.py migrate --noinput &&
+             python3 manage.py createcachetable"
+    volumes:
+      - .:/BagheeraCarrom
+      - pip_cache:/root/.cache/pip
+    # depends_on:
+    #   - db  # Uncomment if needed
+
+  superuser:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: carrom_backend_migration
+    command: >
+      sh -c "python3 manage.py createsuperuser"
+    volumes:
+      - .:/BagheeraCarrom
+      - pip_cache:/root/.cache/pip
+    # depends_on:
+    #   - db  # Uncomment if needed
+
+  # db:
+  #   image: mysql:8.0
+  #   restart: always
+  #   environment:
+  #     MYSQL_DATABASE: bagheera_db
+  #     MYSQL_USER: bagheera_user
+  #     MYSQL_PASSWORD: strongpassword
+  #     MYSQL_ROOT_PASSWORD: rootpassword
+  #   ports:
+  #     - "3306:3306"
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+
+volumes:
+  pip_cache:
+  # mysql_data:
