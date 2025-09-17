@@ -45,7 +45,8 @@ async def verify_otp(request, data: OtpVerify):
         email=data.email,
         phone=data.phone,
         age=data.age,
-        avatar_no=random.randint(1, 10)
+        avatar_no=random.randint(1, 10),
+        bonus = 5000
     )
     user.set_password(data.password)
     await user.asave()
