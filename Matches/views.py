@@ -14,9 +14,17 @@ match_api = Router(tags=["Matches"])
 async def match_making(request, data: MatchMakingIn):
     if await Game.objects.filter(id=data.game_id).aexists():
         user = request.auth
-        if user.coin >= game.entry_amount:
+        if (user.coin + user.cashback) >= game.entry_amount:
             game = await Game.objects.aget(id=data.game_id)
-            user.coin -= game.entry_amount
+            if user.cashback >= game.entry_amount:
+                user.cashback -= game.entry_amount
+            else:
+                if user.cashback > 0:
+                    money = user.cashback
+                    user.cashback = 0
+                    user.coin -= (game.entry_amount - money)
+                else:
+                    user.coin -= game.entry_amount
             await user.asave()
             if await Matches.objects.filter(game=game, status="waiting").aexists():
                 match = await Matches.objects.filter(game=game, status="waiting").afirst()
@@ -105,6 +113,8 @@ async def match_result(request, data: MatchResultIn):
         if not match.status == "completed":
             if player1_id == data.winner_id or player2_id == data.winner_id:
                 winner = await Player.objects.aget(player_id=data.winner_id)
+                winner.coin += match.winning_amount
+                await winner.asave()
                 match.winner = winner
                 winner_id = await sync_to_async(lambda: winner.player_id)()
                 match.status = "completed"

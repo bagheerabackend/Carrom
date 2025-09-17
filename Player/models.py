@@ -9,6 +9,7 @@ class Player(AbstractUser):
     age = models.IntegerField()
     phone = models.CharField(max_length=10, unique=True)
     bonus = models.IntegerField(default=0)
+    cashback = models.FloatField(default=0.0)
     coin = models.IntegerField(default=0)
     aadhar_no = models.CharField(max_length=12, unique=True, null=True, blank=True)
     pan_no = models.CharField(max_length=10, unique=True, null=True, blank=True)
