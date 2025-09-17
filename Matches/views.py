@@ -146,7 +146,7 @@ async def match_result(request, data: MatchResultIn):
     return 404, {"message": "Match does not exist"}
 
 ################################################ Bonus Update ################################################
-@match_api.patch("/update-bonus", response={200: Message, 404: Message})
+@match_api.patch("/update-bonus", response={200: Message, 404: Message, 405: Message})
 async def update_bonus(request, bonus: float):
     user = request.auth
     if user.bonus != 0:
@@ -155,4 +155,4 @@ async def update_bonus(request, bonus: float):
             await user.asave()
             return 200, {"message": "Bonus updated successfully"}
         return 404, {"message": "Invalid bonus amount"}
-    return 200, {"message": "No bonus to update"}
+    return 405, {"message": "No bonus to update"}
