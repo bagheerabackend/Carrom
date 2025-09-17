@@ -37,6 +37,6 @@ class PlayerOut(Schema):
     player_id: str
     name: str
     avatar_no: int
-    # total_games: int
-    # total_wons: int
-    # total_loss: int
+    total_games: int
+    total_wons: int
+    total_loss: int

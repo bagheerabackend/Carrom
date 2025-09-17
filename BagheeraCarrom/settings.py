@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'Player',
     'Matches',
     'Games',
+    'Settings',
     'Dashboard',
 ]
 

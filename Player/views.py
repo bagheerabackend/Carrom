@@ -11,6 +11,7 @@ from ninja_jwt.tokens import RefreshToken, AccessToken
 from django.contrib.auth.hashers import check_password
 from django.core.cache import cache
 import random
+from Matches.models import Matches
 
 user_api = Router(tags=["User"])
 
@@ -96,8 +97,14 @@ async def coin_details(request):
 @user_api.get("/profile-details", response={200: PlayerOut})
 async def get_profile(request):
     user = request.auth
+    total_count = await Matches.objects.filter(Q(player1=user) | Q(player2=user)).acount()
+    winning_count = await Matches.objects.filter(winner=user).acount()
+    losing_count = total_count - winning_count
     return 200, PlayerOut(
         player_id=user.player_id,
         name=user.name,
         avatar_no=user.avatar_no,
+        total_games=total_count,
+        total_wons=winning_count,
+        total_loss=losing_count
     )

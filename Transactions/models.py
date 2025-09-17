@@ -1,10 +1,8 @@
 from django.db import models
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
+from Player.models import Player
 
 class TransactionLog(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(Player, on_delete=models.CASCADE)
     amount = models.IntegerField()
     gst_deduct = models.FloatField()
     balance_after = models.IntegerField()

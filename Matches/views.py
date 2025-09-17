@@ -10,38 +10,41 @@ from asgiref.sync import sync_to_async
 match_api = Router(tags=["Matches"])
 
 ################################################ Match Making ################################################
-@match_api.post("/match-making", response={201: MatchStartingOut, 206: MatchMakingOut, 404: Message})
+@match_api.post("/match-making", response={201: MatchStartingOut, 206: MatchMakingOut, 404: Message, 402: Message})
 async def match_making(request, data: MatchMakingIn):
     if await Game.objects.filter(id=data.game_id).aexists():
         user = request.auth
-        print(user)
-        game = await Game.objects.aget(id=data.game_id)
-        if await Matches.objects.filter(game=game, status="waiting").aexists():
-            match = await Matches.objects.filter(game=game, status="waiting").afirst()
-            match.player2 = user
-            match.status = "full"
-            match.winning_amount = game.winning_amount
-            match.commission_amount = 0
+        if user.coin >= game.entry_amount:
+            game = await Game.objects.aget(id=data.game_id)
+            user.coin -= game.entry_amount
+            await user.asave()
+            if await Matches.objects.filter(game=game, status="waiting").aexists():
+                match = await Matches.objects.filter(game=game, status="waiting").afirst()
+                match.player2 = user
+                match.status = "full"
+                match.winning_amount = game.winning_amount
+                match.commission_amount = 0
+                await match.asave()
+                player1_id = await sync_to_async(lambda: match.player1.player_id)()
+                player2_id = await sync_to_async(lambda: match.player2.player_id)()
+                return 201, {
+                    "match_id": match.id,
+                    "player1_id": player1_id,
+                    "player1_name": match.player1.name,
+                    "player1_avatar_no": match.player1.avatar_no,
+                    "player2_id": player2_id,
+                    "player2_name": match.player2.name,
+                    "player2_avatar_no": match.player2.avatar_no,
+                    "winning_amount": match.winning_amount
+                }
+            match = Matches(game=game, player1=user)
             await match.asave()
-            player1_id = await sync_to_async(lambda: match.player1.player_id)()
-            player2_id = await sync_to_async(lambda: match.player2.player_id)()
-            return 201, {
-                "match_id": match.id,
-                "player1_id": player1_id,
+            return 206, {
+                "player1_id": match.player1.id,
                 "player1_name": match.player1.name,
-                "player1_avatar_no": match.player1.avatar_no,
-                "player2_id": player2_id,
-                "player2_name": match.player2.name,
-                "player2_avatar_no": match.player2.avatar_no,
-                "winning_amount": match.winning_amount
+                "player1_avatar_no": match.player1.avatar_no
             }
-        match = Matches(game=game, player1=user)
-        await match.asave()
-        return 206, {
-            "player1_id": match.player1.id,
-            "player1_name": match.player1.name,
-            "player1_avatar_no": match.player1.avatar_no
-        }
+        return 402, {"message": "Insufficient coins"}
     return 404, {"message": "Game does not exist"}
 
 @match_api.get("/cancel-match", response={200: Message, 404: Message})
@@ -131,3 +134,13 @@ async def match_result(request, data: MatchResultIn):
             "winning_amount": match.winning_amount
         }
     return 404, {"message": "Match does not exist"}
+
+################################################ Bonus Update ################################################
+@match_api.patch("/update-bonus", response={200: Message, 404: Message})
+async def update_bonus(request, bonus: float):
+    user = request.auth
+    if bonus > 0:
+        user.bonus += bonus
+        await user.asave()
+        return 200, {"message": "Bonus updated successfully"}
+    return 404, {"message": "Invalid bonus amount"}

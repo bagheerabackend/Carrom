@@ -7,12 +7,14 @@ from .utils.auth import AsyncJWTAuth
 from Player.views import user_api
 from Games.views import game_api
 from Matches.views import match_api
+from Settings.views import settings_api
 
 api = NinjaAPI(auth=AsyncJWTAuth())
 
 api.add_router("/user/", user_api)
 api.add_router("/games/", game_api)
 api.add_router("/matches/", match_api)
+api.add_router("/settings/", settings_api)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
