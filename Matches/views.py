@@ -150,7 +150,7 @@ async def match_result(request, data: MatchResultIn):
 async def update_bonus(request, bonus: float):
     user = request.auth
     if bonus > 0:
-        user.bonus += bonus
+        user.bonus -= bonus
         await user.asave()
         return 200, {"message": "Bonus updated successfully"}
     return 404, {"message": "Invalid bonus amount"}
