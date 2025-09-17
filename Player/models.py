@@ -1,12 +1,49 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-class UserProfile(AbstractUser):
+class Player(AbstractUser):
     first_name = None
     last_name = None
+    player_id = models.CharField(max_length=1000, unique=True)
     name = models.CharField(max_length=50)
+    age = models.IntegerField()
     phone = models.CharField(max_length=10, unique=True)
-    bonus = models.IntegerField()
-    coin = models.IntegerField()
+    bonus = models.IntegerField(default=0)
+    coin = models.IntegerField(default=0)
+    aadhar_no = models.CharField(max_length=12, unique=True, null=True, blank=True)
+    pan_no = models.CharField(max_length=10, unique=True, null=True, blank=True)
     avatar_no = models.IntegerField()
-    profile_image = models.ImageField(upload_to="/icon", null=True, blank=True)
+    profile_image = models.ImageField(upload_to="profile_image/", null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        related_name='player_set',  # Custom related_name
+        help_text='The groups this user belongs to.'
+    )
+
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        related_name='player_set',  # Custom related_name
+        help_text='Specific permissions for this user.'
+    )
+
+    def __str__(self):
+        return self.username
+    
+class BankDetails(models.Model):
+    user = models.ForeignKey(Player, on_delete=models.CASCADE)
+    account_no = models.CharField(max_length=20)
+    ifsc_code = models.CharField(max_length=11)
+    bank_name = models.CharField(max_length=50)
+    branch_name = models.CharField(max_length=50)
+    holder_name = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"BankDetails of {self.user.username}"
