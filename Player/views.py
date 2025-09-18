@@ -110,7 +110,6 @@ async def get_profile(request):
         total_loss=losing_count
     )
 
-################################################ Update Profile ################################################
 @user_api.patch("/update-profile", response={200: Message, 404: Message})
 async def update_profile(request, data: PatchDict[UserPatch]):
     user = request.auth
@@ -122,4 +121,28 @@ async def update_profile(request, data: PatchDict[UserPatch]):
     await user.asave()
     return 200, {"message": "Profile updated successfully"}
 
-################################################ Verify Aadhar ################################################
+@user_api.get("/delete-account", response={200: Message})
+async def delete_account(request):
+    user = request.auth
+    await user.adelete()
+    return 200, {"message": "Account deleted successfully"}
+
+################################################# Bank Details ################################################
+@user_api.post("/add-bank-details", response={201: Message, 404: Message, 409: Message})
+async def add_bank_details(request, data: BankDetailsIn):
+    user = request.auth
+    if await BankDetails.objects.filter(user=user).aexists():
+        return 409, {"message": "Bank details already exist"}
+    # if await BankDetails.objects.filter(account_no=data.account_no).aexists():
+    #     return 404, {"message": "Account number already exists"}
+    bank_details = BankDetails(**data.dict(), user=user)
+    await bank_details.asave()
+    return 201, {"message": "Bank details added successfully"}
+
+@user_api.get("/get-bank-details", response={200: BankDetailsOut, 404: Message})
+async def get_bank_details(request):
+    user = request.auth
+    if await BankDetails.objects.filter(user=user).aexists():
+        bank_details = await BankDetails.objects.aget(user=user)
+        return 200, bank_details
+    return 404, {"message": "Bank details not found"}

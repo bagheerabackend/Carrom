@@ -32,7 +32,7 @@ async def debit_transaction(request, data: TransactionIn):
     user = request.auth
     if data.amount > 0:
         return 405, {"message": "Amount must be greater than zero"}
-    if user.aadhar_verified:
+    if user.pan_no:
         if user.coin >= data.amount:
 
             ########### Razorpay Integration ###########

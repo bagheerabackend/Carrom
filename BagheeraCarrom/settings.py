@@ -5,10 +5,10 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-rp(##-t#^8^c7h1*3-1eun1e=8_zo-i4w*edk#!izxo72@l&7@'
-DEBUG = True
+SECRET_KEY = config('SECRET_KEY')
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 PROJECT_NAME = config('PROJECT_NAME')
 # CSRF_TRUSTED_ORIGINS = config('DJANGO_CSRF_TRUSTED_ORIGINS', default='').split(',')
 # CSRF_ALLOWED_ORIGINS = config('DJANGO_CSRF_ALLOWED_ORIGINS', default='').split(',')
@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'Matches',
     'Games',
     'Settings',
+    'Transactions',
     'Dashboard',
 ]
 

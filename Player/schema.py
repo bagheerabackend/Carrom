@@ -45,3 +45,18 @@ class UserPatch(Schema):
     name: Optional[str]
     age: Optional[int]
     phone: Optional[str]
+
+class BankDetailsIn(Schema):
+    account_no: str
+    ifsc_code: str
+    bank_name: str
+    branch_name: str
+    holder_name: str
+
+class BankDetailsOut(Schema):
+    account_no: str
+    ifsc_code: str
+    bank_name: str
+    branch_name: str
+    holder_name: str
+    created_at: str

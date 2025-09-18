@@ -7,3 +7,4 @@ class AppSettings(models.Model):
     gst_percentage = models.FloatField(default=0.0)
     withdrawal_limit = models.IntegerField(default=0)
     daily_withdraw_count = models.IntegerField(default=0)
+    # states_blacklisted = models.JSONField(default=[])

@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: carrom_backend
+    restart: always
     ports:
       - "8000:8000"
     command: >
@@ -11,6 +12,8 @@ services:
     volumes:
       - .:/BagheeraCarrom
       - pip_cache:/root/.cache/pip
+    env_file:
+      - .env
     depends_on:
       - migrate_db
       # - db  # Uncomment if using PostgreSQL or another DB
@@ -20,6 +23,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: carrom_backend_migration
+    # restart: always
     command: >
       sh -c "python3 manage.py makemigrations --noinput &&
              python3 manage.py migrate --noinput &&
@@ -27,30 +31,18 @@ services:
     volumes:
       - .:/BagheeraCarrom
       - pip_cache:/root/.cache/pip
+    env_file:
+      - .env
     # depends_on:
     #   - db  # Uncomment if needed
 
-  superuser:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: carrom_backend_migration
-    command: >
-      sh -c "python3 manage.py createsuperuser"
-    volumes:
-      - .:/BagheeraCarrom
-      - pip_cache:/root/.cache/pip
-    # depends_on:
-    #   - db  # Uncomment if needed
-
+  # Uncomment for MySQL database
   # db:
   #   image: mysql:8.0
   #   restart: always
-  #   environment:
-  #     MYSQL_DATABASE: bagheera_db
-  #     MYSQL_USER: bagheera_user
-  #     MYSQL_PASSWORD: strongpassword
-  #     MYSQL_ROOT_PASSWORD: rootpassword
+  #   container_name: carrom_mysql_db
+  #   env_file:
+  #     - .env
   #   ports:
   #     - "3306:3306"
   #   volumes:
