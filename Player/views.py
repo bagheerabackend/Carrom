@@ -109,3 +109,17 @@ async def get_profile(request):
         total_wons=winning_count,
         total_loss=losing_count
     )
+
+################################################ Update Profile ################################################
+@user_api.patch("/update-profile", response={200: Message, 404: Message})
+async def update_profile(request, data: PatchDict[UserPatch]):
+    user = request.auth
+    if "phone" in data:
+        if await Player.objects.filter(phone=data["phone"]).exclude(id=user.id).aexists():
+            return 404, {"message": "Phone number already exists"}
+    for key, value in data.items():
+        setattr(user, key, value)
+    await user.asave()
+    return 200, {"message": "Profile updated successfully"}
+
+################################################ Verify Aadhar ################################################
