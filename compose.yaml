@@ -28,7 +28,7 @@ services:
       - .env
     depends_on:
       - migrate_db
-      # - db  # Uncomment if using PostgreSQL or another DB
+      - db
 
   nginx:
     image: nginx:alpine
@@ -110,3 +110,4 @@ services:
 volumes:
   pip_cache:
   mysql_data:
+  redis_data:
