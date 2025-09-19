@@ -12,6 +12,7 @@ async def credit_transaction(request, data: TransactionIn):
     user = request.auth
     if data.amount > 0:
 
+        ########### GST Calculation ###########
         ########### Razorpay Integration ###########
 
         user.coin += data.amount
@@ -35,6 +36,7 @@ async def debit_transaction(request, data: TransactionIn):
     if user.pan_no:
         if user.coin >= data.amount:
 
+            ########### GST Calculation ###########
             ########### Razorpay Integration ###########
 
             user.coin -= data.amount
