@@ -1,4 +1,16 @@
 services:
+  db:
+    image: mysql:8.0
+    restart: always
+    container_name: carrom_mysql_db
+    env_file:
+      - .env
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+
   backend:
     build:
       context: .
@@ -46,8 +58,8 @@ services:
       - pip_cache:/root/.cache/pip
     env_file:
       - .env
-    # depends_on:
-    #   - db  # Uncomment if needed
+    depends_on:
+      - db 
 
   create_admin:
     build:
@@ -61,20 +73,8 @@ services:
       - pip_cache:/root/.cache/pip
     env_file: 
       - .env
-    # depends_on:
-    #   - db  # Uncomment if using PostgreSQL or another DB
-
-  # Uncomment for MySQL database
-  # db:
-  #   image: mysql:8.0
-  #   restart: always
-  #   container_name: carrom_mysql_db
-  #   env_file:
-  #     - .env
-  #   ports:
-  #     - "3306:3306"
-  #   volumes:
-  #     - mysql_data:/var/lib/mysql
+    depends_on:
+      - db  # Uncomment if using PostgreSQL or another DB
 
   redis:
     image: redis:7-alpine
