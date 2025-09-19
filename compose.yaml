@@ -109,4 +109,4 @@ services:
 
 volumes:
   pip_cache:
-  # mysql_data:
+  mysql_data:
