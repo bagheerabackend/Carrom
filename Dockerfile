@@ -18,9 +18,9 @@ COPY . /BagheeraCarrom/
 # RUN mkdir -p /BagheeraCarrom/staticfiles
 # RUN mkdir -p /BagheeraCarrom/media 
 
-# RUN groupadd -r django && useradd -r -g django django
-# RUN chown -R django:django /BagheeraCarrom
-# USER django
+RUN groupadd -r django && useradd -r -g django django
+RUN chown -R django:django /BagheeraCarrom
+USER django
 
 EXPOSE 8000
 
