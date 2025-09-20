@@ -2,7 +2,13 @@ ARG PYTHON_VERSION=3.13.7
 FROM python:${PYTHON_VERSION}-slim as base
 
 RUN mkdir /BagheeraCarrom
- 
+
+RUN apt-get update && apt-get install -y \
+    default-libmysqlclient-dev \
+    build-essential \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /BagheeraCarrom
  
 ENV PYTHONDONTWRITEBYTECODE=1
