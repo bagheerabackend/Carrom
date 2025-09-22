@@ -73,8 +73,9 @@ services:
     env_file: 
       - .env
     depends_on:
-      - db  # Uncomment if using PostgreSQL or another DB
-
+      - db
+      - migrate_db
+  
   redis:
     image: redis:7-alpine
     restart: unless-stopped
