@@ -21,8 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=django:django . /BagheeraCarrom/
 
-RUN find /BagheeraCarrom -name "migrations" -type d -exec chmod 755 {} \;
-RUN find /BagheeraCarrom -path "*/migrations/*" -name "*.py" -exec chmod 644 {} \;
+RUN chown -R django:django /BagheeraCarrom && chmod -R u+rw /BagheeraCarrom
 
 USER django
 
