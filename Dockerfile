@@ -21,14 +21,6 @@ COPY requirements.txt  /BagheeraCarrom/
 RUN pip install --no-cache-dir -r requirements.txt
  
 COPY . /BagheeraCarrom/
-# RUN mkdir -p /BagheeraCarrom/staticfiles
-# RUN mkdir -p /BagheeraCarrom/media 
-
-# Removed these lines:
-# RUN groupadd -r django && useradd -r -g django django
-# RUN chown -R django:django /BagheeraCarrom
-# USER django
-
 EXPOSE 8000
 
 # CMD ["uvicorn", "BagheeraCarrom.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
