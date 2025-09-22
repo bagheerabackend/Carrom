@@ -4,7 +4,7 @@ from django.contrib.auth.models import AbstractUser
 class Player(AbstractUser):
     first_name = None
     last_name = None
-    player_id = models.CharField(max_length=1000, unique=True)
+    player_id = models.TextField()
     name = models.CharField(max_length=50)
     age = models.IntegerField()
     phone = models.CharField(max_length=10, unique=True)
