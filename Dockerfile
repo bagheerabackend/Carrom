@@ -20,15 +20,14 @@ COPY requirements.txt  /BagheeraCarrom/
  
 RUN pip install --no-cache-dir -r requirements.txt
  
+RUN groupadd -r django && useradd -r -g django django
+# RUN mkdir -p /BagheeraCarrom/staticfiles
+# RUN mkdir -p /BagheeraCarrom/media 
+USER django
+
 COPY . /BagheeraCarrom/
 RUN chown -R django:django /BagheeraCarrom
 RUN chmod -R u+rwX /BagheeraCarrom
-# RUN mkdir -p /BagheeraCarrom/staticfiles
-# RUN mkdir -p /BagheeraCarrom/media 
-
-RUN groupadd -r django && useradd -r -g django django
-RUN chown -R django:django /BagheeraCarrom
-USER django
 
 EXPOSE 8000
 
