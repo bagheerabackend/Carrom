@@ -1,7 +1,5 @@
-ARG PYTHON_VERSION=3.13.7
+ARG PYTHON_VERSION=3.12.0
 FROM python:${PYTHON_VERSION}-slim as base
-
-RUN mkdir /BagheeraCarrom
 
 RUN apt-get update && apt-get install -y \
     default-libmysqlclient-dev \
@@ -9,29 +7,24 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /BagheeraCarrom
- 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1 
- 
-RUN pip install --upgrade pip 
- 
-COPY requirements.txt  /BagheeraCarrom/
- 
-RUN pip install --no-cache-dir -r requirements.txt
- 
 RUN groupadd -r django && useradd -r -g django django
-# RUN mkdir -p /BagheeraCarrom/staticfiles
-# RUN mkdir -p /BagheeraCarrom/media 
-USER django
 
-COPY . /BagheeraCarrom/
-RUN chown -R django:django /BagheeraCarrom
-RUN chmod -R u+rwX /BagheeraCarrom
+WORKDIR /BagheeraCarrom
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+RUN pip install --upgrade pip
+
+COPY --chown=django:django requirements.txt /BagheeraCarrom/
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY --chown=django:django . /BagheeraCarrom/
+
+USER django
 
 EXPOSE 8000
 
-# CMD ["uvicorn", "BagheeraCarrom.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
 CMD ["gunicorn", "BagheeraCarrom.wsgi:application", \
      "--workers", "4", \
      "--worker-class", "uvicorn.workers.UvicornWorker", \
