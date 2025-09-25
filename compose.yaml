@@ -83,6 +83,19 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes
 
+  backup:
+    image: mysql:8.0
+    container_name: carrom_mysql_backup
+    depends_on:
+      - db
+    env_file:
+      - .env
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts
+    command: /cron/setup-cron.sh
+    restart: unless-stopped
+
   # celery:
   #   image: ${DOCKER_IMAGE:-your-registry/your-app:latest}
   #   restart: unless-stopped
