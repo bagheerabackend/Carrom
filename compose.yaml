@@ -93,7 +93,7 @@ services:
     volumes:
       - ./backups:/backups
       - ./scripts:/scripts
-    command: /cron/setup-cron.sh
+    command: /utils/cron/setup-cron.sh
     restart: unless-stopped
 
   # celery:
