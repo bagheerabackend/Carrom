@@ -96,8 +96,8 @@ services:
       - ./scripts:/scripts
     command: >
       sh -c "
-        chmod +x /scripts/*.sh &&
-        echo '0 2 * * * /scripts/backup.sh' > /tmp/crontab &&
+        chmod +x /utils/scripts/*.sh &&
+        echo '0 2 * * * /utils/scripts/backup.sh' > /tmp/crontab &&
         crontab /tmp/crontab &&
         cron -f
       "
