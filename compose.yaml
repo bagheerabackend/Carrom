@@ -94,13 +94,7 @@ services:
       - .:/BagheeraCarrom
       - ./backups:/backups
       - ./scripts:/scripts
-    command: >
-      sh -c "
-        chmod +x /utils/scripts/*.sh &&
-        echo '0 2 * * * /utils/scripts/backup.sh' > /tmp/crontab &&
-        crontab /tmp/crontab &&
-        cron -f
-      "
+    command: /BagheeraCarrom/utils/cron/setup-cron.sh
     restart: unless-stopped
 
   # celery:
