@@ -23,7 +23,6 @@ def admin_login(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
-        print("Login attempt")
         if user is not None:
             login(request, user)
             return redirect('dashboard')
@@ -153,7 +152,6 @@ def matches_comp_data(request):
         'has_next': page_obj.has_next(),
         'has_previous': page_obj.has_previous(),
     }
-    print(context)
     return JsonResponse(context, safe=False)
 
 @login_required(login_url='admin_login')

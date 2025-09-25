@@ -147,7 +147,6 @@ async def match_result(request, data: MatchResultIn):
                     "winning_amount": match.winning_amount
                 }
             return 404, {"message": "Winner must be either player1 or player2"}
-        print("Match already completed")
         return 200, {
             "match_id": match.id,
             "player1_id": player1_id,
