@@ -17,7 +17,6 @@ ENV PYTHONUNBUFFERED=1
 RUN pip install --upgrade pip 
  
 COPY requirements.txt  /BagheeraCarrom/
-COPY utils/cron/setup-cron.sh /utils/cron/setup-cron.sh
  
 RUN pip install --no-cache-dir -r requirements.txt
  
