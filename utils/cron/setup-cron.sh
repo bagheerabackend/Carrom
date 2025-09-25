@@ -1,6 +1,6 @@
 if ! command -v crontab &> /dev/null; then
     echo "Installing cron..."
-    apt-get update && apt-get install -y cron
+    sudo update && sudo install -y cron
 fi
 
 # Setup cron job for automated backups
