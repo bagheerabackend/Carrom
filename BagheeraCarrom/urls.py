@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from ninja import NinjaAPI
@@ -19,6 +19,7 @@ api.add_router("/settings/", settings_api)
 api.add_router("/transactions/", transaction_api)
 
 urlpatterns = [
+    path('dashboard/', include('Dashboard.urls')),
     path('admin/', admin.site.urls),
     path('api/', api.urls),
 ]

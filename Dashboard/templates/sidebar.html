@@ -1,0 +1,61 @@
+{% load static %}
+<div class="sidebar p-4 w-60 h-full bg-white fixed">
+    <img src="{% static 'dashboard/applogo.png' %}" alt="" class="w-35 h-35 mx-auto mb-4">
+    <ul class="mt-5">
+        <li class="px-1 mb-2 text-lg">
+            <a href="{% url "dashboard" %}" class=" {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+        </li>
+        <li class="px-1 mb-2 text-lg">
+            <a href="{% url 'player' %}" class=" {% if request.resolver_match.url_name == 'player' %}active{% endif %}">Players</a>
+        </li>
+        <li class="dropdown px-1 mb-2 text-lg {% if request.resolver_match.url_name in 'matches_completed,matches_ongoing' %}drop-active{% endif %}">
+            <a href="#matches" class="dropdown-toggle ">Matches</a>
+            <div class="dropdown-menu">
+                <a href="{% url 'matches_completed' %}" class="{% if request.resolver_match.url_name == 'matches_completed' %}active{% endif %}">Completed</a>
+                <a href="{% url 'matches_ongoing' %}" class="{% if request.resolver_match.url_name == 'matches_ongoing' %}active{% endif %}">Ongoing</a>
+            </div>
+        </li>
+        <li class="px-1 mb-2 text-lg">
+            <a href="{% url 'matches_bonus' %}" class=" {% if request.resolver_match.url_name == 'matches_bonus' %}active{% endif %}">Bonus Matches</a>
+        </li>
+        <li class="px-1 mb-2 text-lg">
+            <a href="{% url 'games' %}" class=" {% if request.resolver_match.url_name == 'games' %}active{% endif %}">Games</a>
+        </li>
+        <li class="dropdown px-1 mb-2 text-lg {% if request.resolver_match.url_name in 'commission,credit_transfers,debit_transfers' %}drop-active{% endif %}">
+            <a href="#transactions" class="dropdown-toggle ">Transactions</a>
+            <div class="dropdown-menu">
+                <a href="{% url 'commission' %}" class="{% if request.resolver_match.url_name == 'commission' %}active{% endif %}">Commission</a>
+                <a href="{% url 'credit_transfers' %}" class="{% if request.resolver_match.url_name == 'credit_transfers' %}active{% endif %}">Credit</a>
+                <a href="{% url 'debit_transfers' %}" class="{% if request.resolver_match.url_name == 'debit_transfers' %}active{% endif %}">Debit</a>
+            </div>
+        </li>
+        <li class="px-1 mb-2 text-lg">
+            <a href="{% url 'app_settings' %}" class=" {% if request.resolver_match.url_name == 'app_settings' %}active{% endif %}">App Settings</a>
+        </li>
+    </ul>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dropdowns = document.querySelectorAll('.dropdown');
+        dropdowns.forEach(dropdown => {
+            const toggle = dropdown.querySelector('.dropdown-toggle');
+            toggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                dropdowns.forEach(otherDropdown => {
+                    if (otherDropdown !== dropdown) {
+                        otherDropdown.classList.remove('active');
+                    }
+                });
+                dropdown.classList.toggle('active');
+            });
+        });
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.dropdown')) {
+                dropdowns.forEach(dropdown => {
+                    dropdown.classList.remove('active');
+                });
+            }
+        });
+    });
+</script>

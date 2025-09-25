@@ -4,7 +4,9 @@ class Game(models.Model):
     name = models.CharField(max_length=100)
     image = models.ImageField(upload_to="game_image/", null=True, blank=True)
     fee = models.IntegerField()
+    type = models.CharField(max_length=50, default='bonus')
     winning_amount = models.IntegerField()
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

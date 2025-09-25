@@ -11,11 +11,13 @@ class Player(AbstractUser):
     bonus = models.IntegerField(default=0)
     cashback = models.FloatField(default=0.0)
     coin = models.IntegerField(default=0)
+    withdrawable_coin = models.IntegerField(default=0)
     # aadhar_no = models.CharField(max_length=12, unique=True, null=True, blank=True)
     # aadhar_verified = models.BooleanField(default=False)
     pan_no = models.CharField(max_length=10, unique=True, null=True, blank=True)
     avatar_no = models.IntegerField()
     profile_image = models.ImageField(upload_to="profile_image/", null=True, blank=True)
+    is_blocked = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

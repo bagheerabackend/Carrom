@@ -1,0 +1,785 @@
+{% extends "common.html" %}
+{% load static %}
+
+{% block title %}Games{% endblock title %}
+{% block heading %}Games{% endblock heading %}
+
+{% block content %}
+
+<style>
+    @font-face {
+        font-family: 'outfit';
+        src: url('{% static "fonts/Outfit.ttf" %} format("truetype")');
+    } 
+
+    div {
+        font-family: 'outfit', sans-serif;
+    }
+</style>
+
+<div class="mx-auto mt-8 px-4">
+    <div class="w-full">
+        <!-- Search and Filter Controls -->
+        <div class="bg-white rounded-lg shadow-md mb-6">
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div class="md:col-span-2">
+                        <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2">Search
+                            Games:</label>
+                        <input type="text" id="searchInput"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Search by game name...">
+                    </div>
+                    <div>
+                        <label for="statusFilter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Status:</label>
+                        <select id="statusFilter"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Games</option>
+                            <option value="active">Active</option>
+                            <option value="blocked">Blocked</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="typeFilter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Mode:</label>
+                        <select id="typeFilter"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Modes</option>
+                            <option value="cash">Cash</option>
+                            <option value="bonus">Bonus</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="refreshBtn"
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                            </path>
+                        </svg>
+                        Refresh Data
+                    </button>
+                    <button id="addGameBtn"
+                        class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-colors"
+                        onclick="openAddGameModal()">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add New Game
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Games Table -->
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="flex items-center text-lg font-semibold text-gray-900">
+                    <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m2-10v.01M6 20h8M6 4h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z">
+                        </path>
+                    </svg>
+                    Games List
+                    <span id="gameCount"
+                        class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">0</span>
+                </h3>
+            </div>
+            <div class="p-6">
+                <!-- Loading Spinner -->
+                <div id="loadingSpinner" class="text-center py-8 hidden">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p class="mt-2 text-gray-600">Loading games...</p>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="bg-red-50 border border-red-200 rounded-md p-4 mb-4 hidden">
+                    <div class="flex">
+                        <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <span id="errorText" class="text-red-800"></span>
+                            <button type="button" class="float-right text-red-400 hover:text-red-600"
+                                onclick="hideError()">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                        clip-rule="evenodd"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Success Message -->
+                <div id="successMessage" class="bg-green-50 border border-green-200 rounded-md p-4 mb-4 hidden">
+                    <div class="flex">
+                        <svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <span id="successText" class="text-green-800"></span>
+                            <button type="button" class="float-right text-green-400 hover:text-green-600"
+                                onclick="hideSuccess()">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                        clip-rule="evenodd"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Games Table -->
+                <div class="overflow-x-auto">
+                    <table id="gamesTable" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <a href="#" class="flex items-center hover:text-gray-700 transition-colors"
+                                        data-sort="id">
+                                        Game ID
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </a>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Image
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <a href="#" class="flex items-center hover:text-gray-700 transition-colors"
+                                        data-sort="name">
+                                        Name
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </a>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <a href="#" class="flex items-center hover:text-gray-700 transition-colors"
+                                        data-sort="fee">
+                                        Entry Fee
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </a>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <a href="#" class="flex items-center hover:text-gray-700 transition-colors"
+                                        data-sort="winning_amount">
+                                        Winning Amount
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </a>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <a href="#" class="flex items-center hover:text-gray-700 transition-colors"
+                                        data-sort="created_at">
+                                        Created On
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </a>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Status</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gamesTableBody" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="emptyState" class="text-center py-12 hidden">
+                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m2-10v.01M6 20h8M6 4h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z">
+                        </path>
+                    </svg>
+                    <h4 class="text-lg font-medium text-gray-900 mb-2">No Games Found</h4>
+                    <p class="text-gray-500">Try adjusting your search criteria or add new games.</p>
+                </div>
+                
+                <!-- Pagination -->
+                <nav id="paginationContainer" class="mt-6 hidden" aria-label="Games pagination">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1 flex justify-between sm:hidden">
+                            <a href="#" id="prevPageMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Previous
+                            </a>
+                            <a href="#" id="nextPageMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Next
+                            </a>
+                        </div>
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-gray-700">
+                                    Showing <span id="showingStart" class="font-medium">1</span> to <span id="showingEnd" class="font-medium">10</span> of
+                                    <span id="showingTotal" class="font-medium">0</span> results
+                                </p>
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" id="pagination">
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Game Modal -->
+<div id="gameModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4" id="modalTitle">Add New Game</h3>
+            <form id="gameForm" enctype="multipart/form-data">
+                <div class="mb-4">
+                    <label for="gameName" class="block text-sm font-medium text-gray-700 mb-2">Game Name</label>
+                    <input type="text" id="gameName" name="name" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label for="gameImage" class="block text-sm font-medium text-gray-700 mb-2">Game Image</label>
+                    <input type="file" id="gameImage" name="image" accept="image/*"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <div id="imagePreview" class="mt-2 hidden">
+                        <img id="previewImg" src="" alt="Preview" class="w-20 h-20 object-cover rounded">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="gameType" class="block text-sm font-medium text-gray-700 mb-2">Game Mode</label>
+                    <select id="gameType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select</option>
+                            <option value="blocked">Cash</option>
+                            <option value="active">Bonus</option>
+                        </select>
+                </div>
+                <div class="mb-4">
+                    <label for="gameFee" class="block text-sm font-medium text-gray-700 mb-2">Entry Fee (₹)</label>
+                    <input type="number" id="gameFee" name="fee" required min="0" step="0.01"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label for="gameWinning" class="block text-sm font-medium text-gray-700 mb-2">Winning Amount (₹)</label>
+                    <input type="number" id="gameWinning" name="winning_amount" required min="0" step="0.01"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" id="cancelBtn"
+                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium rounded-md transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors">
+                        <span id="submitText">Add Game</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        const config = {
+            apiUrl: '{% url "games_data" %}',
+            addUrl: '{% url "add_game" %}',
+            editUrl: 'edit-game/',
+            deleteUrl: 'delete-game/',
+            blockUrl: 'block-game/',
+            csrfToken: '{{ csrf_token }}',
+            currentPage: 1,
+            itemsPerPage: 10,
+            sortBy: 'id',
+            sortOrder: 'desc',
+            currentGameId: null
+        };
+
+        init();
+
+        function init() {
+            loadGames();
+            setupEventListeners();
+        }
+
+        function setupEventListeners() {
+            let searchTimeout;
+            $('#searchInput').on('input', function () {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    config.currentPage = 1;
+                    loadGames();
+                }, 300);
+            });
+
+            // Filter changes
+            $('#statusFilter').on('change', function () {
+                config.currentPage = 1;
+                loadGames();
+            });
+
+            // Filter changes
+            $('#typeFilter').on('change', function () {
+                config.currentPage = 1;
+                loadGames();
+            });
+
+            // Refresh button
+            $('#refreshBtn').on('click', function () {
+                loadGames();
+            });
+
+            // Sorting
+            $('[data-sort]').on('click', function (e) {
+                e.preventDefault();
+                const sortField = $(this).data('sort');
+                if (config.sortBy === sortField) {
+                    config.sortOrder = config.sortOrder === 'asc' ? 'desc' : 'asc';
+                } else {
+                    config.sortBy = sortField;
+                    config.sortOrder = 'asc';
+                }
+                loadGames();
+                updateSortIndicators();
+            });
+
+            // Modal form submission
+            $('#gameForm').on('submit', function (e) {
+                e.preventDefault();
+                submitGameForm();
+            });
+
+            // Cancel button
+            $('#cancelBtn').on('click', function () {
+                closeModal();
+            });
+
+            // Image preview
+            $('#gameImage').on('change', function () {
+                previewImage(this);
+            });
+
+            // Close modal when clicking outside
+            $('#gameModal').on('click', function (e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+        }
+
+        function loadGames() {
+            showLoading();
+            hideError();
+            hideSuccess();
+
+            const params = {
+                page: config.currentPage,
+                per_page: config.itemsPerPage,
+                search_value: $('#searchInput').val(),
+                sort_by: config.sortBy,
+                sort_order: config.sortOrder
+            };
+
+            // Add status filter if selected
+            const statusFilter = $('#statusFilter').val();
+            if (statusFilter) params.status = statusFilter;
+
+            const typeFilter = $('#typeFilter').val()
+            if (typeFilter) params.type = typeFilter;
+
+            $.ajax({
+                url: config.apiUrl,
+                method: 'GET',
+                data: params,
+                headers: {
+                    'X-CSRFToken': config.csrfToken
+                },
+                success: function (response) {
+                    hideLoading();
+                    console.log(response);
+                    renderGamesTable(response.games);
+                    renderPagination(response);
+                    updateGameCount(response.total);
+
+                    if (response.games.length === 0) {
+                        showEmptyState();
+                    } else {
+                        hideEmptyState();
+                    }
+                },
+                error: function (xhr, status, error) {
+                    hideLoading();
+                    showError('Failed to load games: ' + error);
+                    console.error('Error loading games:', error);
+                }
+            });
+        }
+
+        function convertUTCToISTSimple(utcDateString) {
+            const date = new Date(utcDateString);
+            return date.toLocaleString('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                dateStyle: 'medium',
+                timeStyle: 'short'
+            });
+        }
+
+        function renderGamesTable(games) {
+            const tbody = $('#gamesTableBody');
+            tbody.empty();
+
+            games.forEach(game => {
+                const statusColor = game.is_active === false ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+                const statusText = game.is_active === false ? 'Blocked' : 'Active';
+                const createdAtIST = convertUTCToISTSimple(game.created_at);
+                const blockButtonText = game.is_active === false ? 'Unblock' : 'Block';
+                const blockButtonColor = game.is_active === false ? 'text-green-600 hover:text-green-900' : 'text-yellow-600 hover:text-yellow-900';
+                const imageUrl = game.image;
+
+                const row = `
+                <tr data-game-id="${game.id}" class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${game.id}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <img src="${imageUrl}" alt="${game.name}" class="w-17 h-17 object-cover rounded-lg">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${game.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">₹${game.fee || 0}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">₹${game.winning_amount || 0}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${createdAtIST}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex space-x-2">
+                            <button onclick="editGame(${game.id})" class="text-blue-600 hover:text-blue-900 p-1 rounded" title="Edit">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+                            <button onclick="toggleBlockGame(${game.id}, ${game.is_active === false})" class="${blockButtonColor} p-1 rounded" title="${blockButtonText}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-ban" viewBox="0 0 16 16">
+                                    <path d="M15 8a6.97 6.97 0 0 0-1.71-4.584l-9.874 9.875A7 7 0 0 0 15 8M2.71 12.584l9.874-9.875a7 7 0 0 0-9.874 9.874ZM16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0"/>
+                                </svg>
+                            </button>
+                            <button onclick="deleteGame(${game.id})" class="text-red-600 hover:text-red-900 p-1 rounded" title="Delete">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+                tbody.append(row);
+            });
+        }
+
+        function renderPagination(data) {
+            const container = $('#pagination');
+            container.empty();
+
+            if (data.total_pages <= 1) {
+                $('#paginationContainer').hide();
+                return;
+            }
+
+            $('#paginationContainer').show();
+            
+            // Update showing text
+            const start = ((data.current_page - 1) * config.itemsPerPage) + 1;
+            const end = Math.min(data.current_page * config.itemsPerPage, data.total);
+            $('#showingStart').text(start);
+            $('#showingEnd').text(end);
+            $('#showingTotal').text(data.total);
+
+            // Previous button
+            const prevDisabled = data.current_page <= 1;
+            container.append(`
+                <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${prevDisabled ? 'cursor-not-allowed opacity-50' : ''}" data-page="${data.current_page - 1}" ${prevDisabled ? 'onclick="return false;"' : ''}>
+                    <span class="sr-only">Previous</span>
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </a>
+            `);
+
+            // Page numbers
+            const maxVisiblePages = 5;
+            const startPage = Math.max(1, data.current_page - Math.floor(maxVisiblePages / 2));
+            const endPage = Math.min(data.total_pages, startPage + maxVisiblePages - 1);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const active = i === data.current_page;
+                const activeClasses = active ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50';
+                container.append(`
+                    <a href="#" class="relative inline-flex items-center px-4 py-2 border text-sm font-medium ${activeClasses}" data-page="${i}">
+                        ${i}
+                    </a>
+                `);
+            }
+
+            // Next button
+            const nextDisabled = data.current_page >= data.total_pages;
+            container.append(`
+                <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${nextDisabled ? 'cursor-not-allowed opacity-50' : ''}" data-page="${data.current_page + 1}" ${nextDisabled ? 'onclick="return false;"' : ''}>
+                    <span class="sr-only">Next</span>
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </a>
+            `);
+
+            // Pagination click handlers
+            container.find('a[data-page]').on('click', function (e) {
+                e.preventDefault();
+                const page = parseInt($(this).data('page'));
+                if (page && page !== config.currentPage && page >= 1 && page <= data.total_pages) {
+                    config.currentPage = page;
+                    loadGames();
+                }
+            });
+        }
+
+        function updateSortIndicators() {
+            // Reset all sort indicators
+            $('[data-sort] svg').removeClass('text-blue-600').addClass('text-gray-400');
+            
+            // Highlight current sort field
+            const currentSortElement = $(`[data-sort="${config.sortBy}"]`);
+            currentSortElement.find('svg').removeClass('text-gray-400').addClass('text-blue-600');
+            
+            // Update sort direction indicator
+            const svg = currentSortElement.find('svg');
+            if (config.sortOrder === 'desc') {
+                svg.css('transform', 'rotate(180deg)');
+            } else {
+                svg.css('transform', 'rotate(0deg)');
+            }
+        }
+
+        function submitGameForm() {
+            const formData = new FormData($('#gameForm')[0]);
+            const url = config.currentGameId ? `${config.editUrl}${config.currentGameId}/` : config.addUrl;
+            
+            $.ajax({
+                url: url,
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-CSRFToken': config.csrfToken
+                },
+                success: function (response) {
+                    closeModal();
+                    loadGames();
+                    const message = config.currentGameId ? 'Game updated successfully!' : 'Game added successfully!';
+                    showSuccessMessage(message);
+                    config.currentGameId = null;
+                },
+                error: function (xhr) {
+                    let errorMessage = 'Failed to save game';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    showError(errorMessage);
+                }
+            });
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#previewImg').attr('src', e.target.result);
+                    $('#imagePreview').removeClass('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function closeModal() {
+            $('#gameModal').addClass('hidden');
+            $('#gameForm')[0].reset();
+            $('#imagePreview').addClass('hidden');
+            config.currentGameId = null;
+        }
+
+        // Global functions for button actions
+        window.openAddGameModal = function () {
+            $('#modalTitle').text('Add New Game');
+            $('#submitText').text('Add Game');
+            $('#gameForm')[0].reset();
+            $('#imagePreview').addClass('hidden');
+            config.currentGameId = null;
+            $('#gameModal').removeClass('hidden');
+        };
+
+        window.editGame = function (gameId) {
+            // Find game data from current table
+            const gameRow = $(`tr[data-game-id="${gameId}"]`);
+            if (gameRow.length) {
+                const cells = gameRow.find('td');
+                $('#modalTitle').text('Edit Game');
+                $('#submitText').text('Update Game');
+                $('#gameName').val($(cells[2]).text().trim());
+                $('#gameFee').val($(cells[3]).text().replace('₹', '').trim());
+                $('#gameWinning').val($(cells[4]).text().replace('₹', '').trim());
+                
+                // Show current image if exists
+                const currentImg = $(cells[1]).find('img');
+                if (currentImg.length) {
+                    $('#previewImg').attr('src', currentImg.attr('src'));
+                    $('#imagePreview').removeClass('hidden');
+                }
+                
+                config.currentGameId = gameId;
+                $('#gameModal').removeClass('hidden');
+            }
+        };
+
+        window.toggleBlockGame = function (gameId, isBlocked) {
+            const action = isBlocked ? 'unblock' : 'block';
+            const message = isBlocked ? 'Are you sure you want to unblock this game?' : 'Are you sure you want to block this game?';
+            
+            if (confirm(message)) {
+                $.ajax({
+                    url: `${config.blockUrl}${gameId}`,
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': config.csrfToken
+                    },
+                    success: function () {
+                        loadGames();
+                        showSuccessMessage(`Game ${action}ed successfully!`);
+                    },
+                    error: function (xhr) {
+                        let errorMessage = `Failed to ${action} game`;
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        showError(errorMessage);
+                    }
+                });
+            }
+        };
+
+        window.deleteGame = function (gameId) {
+            if (confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
+                $.ajax({
+                    url: `${config.deleteUrl}${gameId}`,
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': config.csrfToken
+                    },
+                    success: function () {
+                        loadGames();
+                        showSuccessMessage('Game deleted successfully!');
+                    },
+                    error: function (xhr) {
+                        let errorMessage = 'Failed to delete game';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        showError(errorMessage);
+                    }
+                });
+            }
+        };
+
+        // Utility functions
+        function showLoading() {
+            $('#loadingSpinner').removeClass('hidden');
+            $('#gamesTable').addClass('opacity-50');
+        }
+
+        function hideLoading() {
+            $('#loadingSpinner').addClass('hidden');
+            $('#gamesTable').removeClass('opacity-50');
+        }
+
+        function showError(message) {
+            $('#errorText').text(message);
+            $('#errorMessage').removeClass('hidden');
+            // Auto-hide after 5 seconds
+            setTimeout(hideError, 5000);
+        }
+
+        function hideError() {
+            $('#errorMessage').addClass('hidden');
+        }
+
+        function showSuccess(message) {
+            $('#successText').text(message);
+            $('#successMessage').removeClass('hidden');
+            // Auto-hide after 3 seconds
+            setTimeout(hideSuccess, 3000);
+        }
+
+        function hideSuccess() {
+            $('#successMessage').addClass('hidden');
+        }
+
+        function showEmptyState() {
+            $('#emptyState').removeClass('hidden');
+            $('#gamesTable').addClass('hidden');
+            $('#paginationContainer').addClass('hidden');
+        }
+
+        function hideEmptyState() {
+            $('#emptyState').addClass('hidden');
+            $('#gamesTable').removeClass('hidden');
+        }
+
+        function updateGameCount(count) {
+            $('#gameCount').text(count);
+        }
+
+        function showSuccessMessage(message) {
+            showSuccess(message);
+        }
+
+        // Global function for hiding success message
+        window.hideSuccess = hideSuccess;
+        window.hideError = hideError;
+    });
+</script>
+
+{% endblock content %}

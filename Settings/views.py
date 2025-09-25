@@ -12,7 +12,7 @@ settings_api = Router(tags=["Settings"])
 @settings_api.get("/app-settings", auth=None, response={200: Settings, 404: Message})
 async def app_settings(request):
     if await AppSettings.objects.aexists():
-        settings = await AppSettings.objects.afirst()
+        settings = await AppSettings.objects.alast()
         return 200, {
             "maintenance_mode": settings.maintenance_mode,
             "maintenance_message": settings.maintenance_message,

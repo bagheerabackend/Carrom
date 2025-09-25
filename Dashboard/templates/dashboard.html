@@ -1,0 +1,284 @@
+{% extends "common.html" %}
+{% load static %}
+{% block title %}Dashboard{% endblock title %}
+{% block heading %}Overview{% endblock heading %}
+{% block content %}
+<div class="px-5 py-5">
+    <div class="flex space-x-4  mb-8 ">
+        <div class="w-1/3 flex h-fit justify-between bg-white rounded-4xl shadow">
+            <div class="px-8 flex flex-col justify-between py-8 ">
+                <div>
+                    <h3 class="text-2xl font-bold">Total Players</h3>
+                </div>
+                <h3 class="text-5xl text-[#0a53a1] font-semibold break-all">{{total_players}}</h3>
+            </div>
+            <img src="{% static 'dashboard/01.png' %}" alt="" class="ml-15 mt-8 h-60 ">
+        </div>
+        <div class="w-1/3 flex h-fit justify-between bg-white rounded-4xl shadow">
+            <div class="px-8 flex flex-col justify-between py-8 ">
+                <div>
+                    <h3 class="text-2xl font-bold ">Total Matches Completed</h3>
+                </div>
+                <h3 class="text-5xl text-[#0a53a1] font-semibold break-all">{{total_matches_completed}}</h3>
+            </div>
+            <img src="{% static 'dashboard/02.png' %}" alt="" class="ml-25 mt-8 h-60 ">
+        </div>
+        <div class="w-1/3 flex h-fit justify-between bg-white rounded-4xl shadow">
+            <div class="px-8 flex flex-col justify-between py-8 ">
+                <div>
+                    <h3 class="text-2xl font-bold ">Total Amount Won</h3>
+                </div>
+                <h3 class="text-5xl text-[#0a53a1] font-semibold break-all">{{total_amount_won}}</h3>
+            </div>
+            <img src="{% static 'dashboard/03.png' %}" alt="" class="ml-25 mt-8 h-60 ">
+        </div>
+    </div>
+
+    <div class="bg-gray-200 rounded-4xl shadow">
+        <div class="p-8 ">
+            <h3 class="text-xl font-semibold">Last 3 Transactions</h3>
+            <div class="flex space-x-4 mt-6 px-15">
+                <div class="w-1/2 bg-white rounded-4xl p-4">
+                    <h3 class="text-xl text-center font-semibold">Credit</h3>
+                    <div id="credit-loading" class="text-center py-4">
+                        <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                        <span class="ml-2">Loading...</span>
+                    </div>
+                    <table id="credit-table" class="w-full mt-4 px-10 hidden">
+                        <tbody id="credit-tbody" class="px-10">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="w-1/2 bg-white rounded-4xl p-4">
+                    <h3 class="text-xl text-center font-semibold">Debit</h3>
+                    <div id="debit-loading" class="text-center py-4">
+                        <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                        <span class="ml-2">Loading...</span>
+                    </div>
+                    <table id="debit-table" class="w-full mt-4 px-10 hidden">
+                        <tbody id="debit-tbody" class="px-10">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex space-x-4 my-8 ">
+        <div class="w-1/2 bg-white rounded-4xl p-5 shadow shadow">
+            <h3 class="text-xl text-center font-semibold">New Players</h3>
+            <div id="new-players-loading" class="text-center py-4">
+                <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                <span class="ml-2">Loading...</span>
+            </div>
+            <table id="new-players-table" class="w-full mt-4 px-10 hidden">
+                <tbody id="new-players-tbody" class="px-10">
+                </tbody>
+            </table>
+        </div>
+        <div class="w-1/2 bg-white rounded-4xl p-5 shadow shadow">
+            <h3 class="text-xl text-center font-semibold">Ongoing Matches</h3>
+            <div id="ongoing-matches-loading" class="text-center py-4">
+                <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                <span class="ml-2">Loading...</span>
+            </div>
+            <table id="ongoing-matches-table" class="w-full mt-4 px-10 hidden">
+                <tbody id="ongoing-matches-tbody" class="px-10">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        function getCSRFToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+
+        function showError(containerId, message) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="text-center py-4 text-red-500">${message}</div>`;
+        }
+
+        function populateCreditTransactions(data) {
+            const tbody = document.getElementById('credit-tbody');
+            const loading = document.getElementById('credit-loading');
+            const table = document.getElementById('credit-table');
+
+            tbody.innerHTML = '';
+
+            if (data && data.length > 0) {
+                data.forEach((transaction, index) => {
+                    const row = document.createElement('tr');
+                    const borderClass = index === data.length - 1 ? 'border-b-0' : 'border-b';
+                    row.className = `${borderClass} px-10 text-center border-gray-200`;
+                    row.innerHTML = `
+                    <td class="p-2 w-100">${transaction.name || 'N/A'}</td>
+                    <td class="p-2 w-100">₹${transaction.amount || '0'}</td>
+                `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">No credit transactions found</td></tr>';
+            }
+
+            loading.classList.add('hidden');
+            table.classList.remove('hidden');
+        }
+
+        function populateDebitTransactions(data) {
+            const tbody = document.getElementById('debit-tbody');
+            const loading = document.getElementById('debit-loading');
+            const table = document.getElementById('debit-table');
+
+            tbody.innerHTML = '';
+
+            if (data && data.length > 0) {
+                data.forEach((transaction, index) => {
+                    const row = document.createElement('tr');
+                    const borderClass = index === data.length - 1 ? 'border-b-0' : 'border-b';
+                    row.className = `${borderClass} px-10 text-center border-gray-200`;
+                    row.innerHTML = `
+                    <td class="p-2 w-100">${transaction.name || 'N/A'}</td>
+                    <td class="p-2 w-100">₹${transaction.amount || '0'}</td>
+                `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">No debit transactions found</td></tr>';
+            }
+
+            loading.classList.add('hidden');
+            table.classList.remove('hidden');
+        }
+
+        function populateNewPlayers(data) {
+            const tbody = document.getElementById('new-players-tbody');
+            const loading = document.getElementById('new-players-loading');
+            const table = document.getElementById('new-players-table');
+
+            tbody.innerHTML = '';
+
+            if (data && data.length > 0) {
+                data.forEach((player, index) => {
+                    const row = document.createElement('tr');
+                    const borderClass = index === data.length - 1 ? 'border-b-0' : 'border-b';
+                    row.className = `${borderClass} px-10 text-center border-gray-200`;
+
+                    let timeAgo = 'N/A';
+                    if (player.created_at) {
+                        const createdDate = new Date(player.created_at);
+                        const now = new Date();
+                        const diffMs = now - createdDate;
+
+                        const seconds = Math.floor(diffMs / 1000);
+                        const minutes = Math.floor(seconds / 60);
+                        const hours = Math.floor(minutes / 60);
+                        const days = Math.floor(hours / 24);
+
+                        if (days > 0) {
+                            timeAgo = `${days} day${days > 1 ? 's' : ''} ago`;
+                        } else if (hours > 0) {
+                            timeAgo = `${hours} hour${hours > 1 ? 's' : ''} ago`;
+                        } else if (minutes > 0) {
+                            timeAgo = `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+                        } else {
+                            timeAgo = `just now`;
+                        }
+                    }
+
+                    row.innerHTML = `
+                    <td class="p-2 w-100">${player.name || 'N/A'}</td>
+                    <td class="p-2 w-100 text-sm">${timeAgo}</td>
+                `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">No new players found</td></tr>';
+            }
+
+            loading.classList.add('hidden');
+            table.classList.remove('hidden');
+        }
+
+        function populateOngoingMatches(data) {
+            const tbody = document.getElementById('ongoing-matches-tbody');
+            const loading = document.getElementById('ongoing-matches-loading');
+            const table = document.getElementById('ongoing-matches-table');
+
+            tbody.innerHTML = '';
+
+            if (data && data.length > 0) {
+                data.forEach((match, index) => {
+                    const row = document.createElement('tr');
+                    const borderClass = index === data.length - 1 ? 'border-b-0' : 'border-b';
+                    row.className = `${borderClass} px-10 text-center border-gray-200`;
+                    row.innerHTML = `
+                    <td class="p-2 w-100">${match.player1__name || 'N/A'}</td>
+                    <td class="p-2 w-100">v/s</td>
+                    <td class="p-2 w-100">${match.player2__name || 'N/A'}</td>
+                `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500">No ongoing matches found</td></tr>';
+            }
+
+            loading.classList.add('hidden');
+            table.classList.remove('hidden');
+        }
+
+        function fetchDashboardData() {
+            fetch('dashboard-data', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.credit_transactions) {
+                        populateCreditTransactions(data.credit_transactions);
+                    } else {
+                        showError('credit-loading', 'Failed to load credit transactions');
+                    }
+
+                    if (data.debit_transactions) {
+                        populateDebitTransactions(data.debit_transactions);
+                    } else {
+                        showError('debit-loading', 'Failed to load debit transactions');
+                    }
+
+                    if (data.new_players) {
+                        populateNewPlayers(data.new_players);
+                    } else {
+                        showError('new-players-loading', 'Failed to load new players');
+                    }
+
+                    if (data.ongoing_matches) {
+                        populateOngoingMatches(data.ongoing_matches);
+                    } else {
+                        showError('ongoing-matches-loading', 'Failed to load ongoing matches');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching dashboard data:', error);
+                    showError('credit-loading', 'Error loading data');
+                    showError('debit-loading', 'Error loading data');
+                    showError('new-players-loading', 'Error loading data');
+                    showError('ongoing-matches-loading', 'Error loading data');
+                });
+        }
+        fetchDashboardData();
+        // setInterval(fetchDashboardData, 30000);
+    });
+</script>
+
+{% endblock content %}

@@ -9,7 +9,6 @@ class Matches(models.Model):
     player2 = models.ForeignKey(Player, related_name='match_player2', on_delete=models.CASCADE, null=True, blank=True)
     player2_disconnected = models.BooleanField(default=False)
     winner = models.ForeignKey(Player, related_name='winner', on_delete=models.CASCADE, null=True, blank=True)
-    type = models.CharField(max_length=50, default='online')
     status = models.CharField(max_length=20, choices=[('waiting', 'Waiting'), ('full', 'Full'), ('completed', 'Completed')], default='waiting')
     winning_amount = models.IntegerField(null=True, blank=True)
     commission_amount = models.IntegerField(null=True, blank=True)

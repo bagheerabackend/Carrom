@@ -10,28 +10,37 @@ from asgiref.sync import sync_to_async
 match_api = Router(tags=["Matches"])
 
 ################################################ Match Making ################################################
-@match_api.post("/match-making", response={201: MatchStartingOut, 206: MatchMakingOut, 404: Message, 402: Message})
+@match_api.post("/match-making", response={201: MatchStartingOut, 206: MatchMakingOut, 404: Message, 402: Message, 409: Message})
 async def match_making(request, data: MatchMakingIn):
     if await Game.objects.filter(id=data.game_id).aexists():
         user = request.auth
-        if (user.coin + user.cashback) >= game.entry_amount:
-            game = await Game.objects.aget(id=data.game_id)
-            if user.cashback >= game.entry_amount:
-                user.cashback -= game.entry_amount
+        if user.is_blocked:
+            return 409, {"message": "Player blocked"}
+        
+        game = await Game.objects.aget(id=data.game_id)
+        entry_amount = user.bonus if game.type == "bonus" else (user.coin + user.cashback)
+
+        if (entry_amount) >= game.fee:
+            if game.type == "bonus":
+                user.bonus -= game.fee
             else:
-                if user.cashback > 0:
-                    money = user.cashback
-                    user.cashback = 0
-                    user.coin -= (game.entry_amount - money)
+                if user.cashback >= game.fee:
+                    user.cashback -= game.fee
                 else:
-                    user.coin -= game.entry_amount
+                    if user.cashback > 0:
+                        money = user.cashback
+                        user.cashback = 0
+                        user.coin -= (game.fee - money)
+                    else:
+                        user.coin -= game.fee
             await user.asave()
             if await Matches.objects.filter(game=game, status="waiting").aexists():
                 match = await Matches.objects.filter(game=game, status="waiting").afirst()
                 match.player2 = user
                 match.status = "full"
                 match.winning_amount = game.winning_amount
-                match.commission_amount = 0
+                game_fee = await sync_to_async(lambda: match.game.fee)()
+                match.commission_amount = (game_fee * 2) - game.winning_amount
                 await match.asave()
                 player1_id = await sync_to_async(lambda: match.player1.player_id)()
                 player2_id = await sync_to_async(lambda: match.player2.player_id)()
@@ -55,12 +64,14 @@ async def match_making(request, data: MatchMakingIn):
         return 402, {"message": "Insufficient coins"}
     return 404, {"message": "Game does not exist"}
 
-@match_api.get("/cancel-match", response={200: Message, 404: Message})
+@match_api.get("/cancel-match", response={200: Message, 404: Message, 409: Message})
 async def cancel_match(request, match_id: int):
     user = request.auth
     if await Matches.objects.filter(id=match_id, player1=user, status="waiting").aexists():
         match = await Matches.objects.aget(id=match_id)
         await match.adelete()
+        if user.is_blocked:
+            return 409, {"message": "Player blocked"}
         return 200, {"message": "Match cancelled successfully"}
     return 404, {"message": "Match does not exist or cannot be cancelled"}
 
@@ -110,10 +121,15 @@ async def match_result(request, data: MatchResultIn):
         match = await Matches.objects.aget(id=data.match_id)
         player1_id = await sync_to_async(lambda: match.player1.player_id)()
         player2_id = await sync_to_async(lambda: match.player2.player_id)()
+        game_type = await sync_to_async(lambda: match.game.type)()
         if not match.status == "completed":
             if player1_id == data.winner_id or player2_id == data.winner_id:
                 winner = await Player.objects.aget(player_id=data.winner_id)
-                winner.coin += match.winning_amount
+                if game_type == "bonus":
+                    winner.bonus += match.winning_amount
+                else:
+                    winner.withdrawable_coin += (match.winning_amount - match.game.fee)
+                    winner.coin += match.winning_amount
                 await winner.asave()
                 match.winner = winner
                 winner_id = await sync_to_async(lambda: winner.player_id)()
@@ -146,9 +162,11 @@ async def match_result(request, data: MatchResultIn):
     return 404, {"message": "Match does not exist"}
 
 ################################################ Bonus Update ################################################
-@match_api.patch("/update-bonus", response={200: Message, 404: Message, 405: Message})
+@match_api.patch("/update-bonus", response={200: Message, 404: Message, 405: Message, 409: Message})
 async def update_bonus(request, bonus: float):
     user = request.auth
+    if user.is_blocked:
+        return 409, {"message": "Player blocked"}
     if user.bonus != 0:
         if bonus > 0:
             user.bonus -= bonus
