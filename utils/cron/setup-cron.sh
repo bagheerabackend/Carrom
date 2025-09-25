@@ -1,4 +1,17 @@
-echo "0 2 * * * /BagheeraCarrom/utils/scripts/backup.sh" > /tmp/crontab
-echo "0 */6 * * * /BagheeraCarrom/utils/scripts/backup.sh" >> /tmp/crontab  # Every 6 hours
+if ! command -v crontab &> /dev/null; then
+    echo "Installing cron..."
+    apt-get update && apt-get install -y cron
+fi
+
+# Setup cron job for automated backups
+echo "0 2 * * * /BagheeraCarrom/scripts/backup.sh" > /tmp/crontab
+echo "0 */6 * * * /BagheeraCarrom/scripts/backup.sh" >> /tmp/crontab  # Every 6 hours
+
+# Install crontab
 crontab /tmp/crontab
-cron -f
+
+# Start cron daemon
+service cron start
+
+# Keep container running
+tail -f /var/log/cron.log
