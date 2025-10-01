@@ -197,13 +197,13 @@ def bonus_games_data(request):
     search_value = request.GET.get('search_value')
     sort_by = request.GET.get('sort_by', 'id')
     sort_order = '' if request.GET.get('sort_order') == 'asc' else '-'
-    q = Q(status='completed', game__type='bonus')
+    q = Q(status__in=['completed', 'full'], game__type='bonus')
     if search_value:
         q &= (Q(player1__name__icontains=search_value) | Q(player1__phone__icontains=search_value) | Q(player2__name__icontains=search_value) | Q(player2__phone__icontains=search_value))
     matches = Matches.objects.filter(q).order_by(f'{sort_order}{sort_by}')
     paginator = Paginator(matches, per_page)
     page_obj = paginator.get_page(page)
-    match_list = list(page_obj.object_list.values('id', 'player1__name', 'player1__phone', 'player2__name', 'player2__phone', 'winner__name', 'winner__phone', 'winning_amount', 'game__name', 'commission_amount', 'created_at'))
+    match_list = list(page_obj.object_list.values('id', 'player1__name', 'player1__phone', 'player2__name', 'player2__phone', 'winner__name', 'winner__phone', 'winning_amount', 'game__name', 'commission_amount', 'created_at', 'status'))
     context = {
         'total': paginator.count,
         'matches': match_list,
