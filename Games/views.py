@@ -3,13 +3,17 @@ from .schema import *
 from typing import *
 from .models import *
 from Matches.models import *
+from django.db.models import Q
 
 game_api = Router(tags=["Game"])
 
 ################################################ Games ################################################
 @game_api.get("/", response={200: List[GameListOut]})
-async def get_games(request):
-    games = [game async for game in Game.objects.filter(is_active=True).values("id", "name", "image", "fee", "winning_amount")]
+async def get_games(request, type):
+    q = Q(is_active=True)
+    if type:
+        q &= Q(type=type)
+    games = [game async for game in Game.objects.filter(q).values("id", "name", "image", "fee", "winning_amount")]
     game_list = []
     for i in games:
         total_players = await Matches.objects.filter(game__id=i.get('id'), status='full').acount()
