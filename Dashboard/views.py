@@ -85,7 +85,7 @@ def player_data(request):
     players = Player.objects.filter(q).order_by(f'{sort_order}{sort_by}')
     paginator = Paginator(players, per_page)
     page_obj = paginator.get_page(page)
-    players_list = list(page_obj.object_list.values('id', 'player_id', 'name', 'phone', 'age', 'coin', 'withdrawable_coin', 'bonus', 'is_blocked', 'created_at'))
+    players_list = list(page_obj.object_list.values('id', 'player_id', 'name', 'email', 'phone', 'age', 'coin', 'withdrawable_coin', 'bonus', 'is_blocked', 'created_at'))
     response_data = {
         'total': paginator.count,
         'players': players_list,
