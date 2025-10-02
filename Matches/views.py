@@ -69,6 +69,15 @@ async def cancel_match(request, match_id: int):
     user = request.auth
     if await Matches.objects.filter(id=match_id, player1=user, status="waiting").aexists():
         match = await Matches.objects.aget(id=match_id)
+        game = await sync_to_async(lambda: match.game)()
+        if game.type == "bonus":
+            user.bonus += game.fee
+        else:
+            if user.cashback >= 0:
+                user.cashback += game.fee
+            else:
+                user.coin += game.fee
+        await user.asave()
         await match.adelete()
         if user.is_blocked:
             return 409, {"message": "Player blocked"}
