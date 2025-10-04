@@ -36,7 +36,8 @@ async def match_making(request, data: MatchMakingIn):
             await user.asave()
             if await Matches.objects.filter(game=game, status="waiting").aexists():
                 match = await Matches.objects.filter(game=game, status="waiting").afirst()
-                if match.player1 == user:
+                player1 = await sync_to_async(lambda: match.player1)()
+                if player1 == user:
                     return 405, {"message": "User already joined as player 1"}
                 match.player2 = user
                 match.status = "full"
