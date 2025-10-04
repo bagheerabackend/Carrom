@@ -1,0 +1,485 @@
+{% extends "common.html" %}
+{% load static %}
+
+{% block title %}Contact Messages{% endblock title %}
+{% block heading %}Contact Messages (Website){% endblock heading %}
+
+{% block content %}
+<div class="mx-auto mt-8 px-4">
+    <div class="w-full">
+        <!-- Search and Filter Controls -->
+        <div class="bg-white rounded-lg shadow-md mb-6">
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="md:col-span-2">
+                        <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2">Search Messages:</label>
+                        <input type="text" id="searchInput"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Search by name or phone...">
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="refreshBtn"
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                            </path>
+                        </svg>
+                        Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Messages Table -->
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="flex items-center text-lg font-semibold text-gray-900">
+                    <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                    Contact Messages
+                    <span id="contactCount"
+                        class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">0</span>
+                </h3>
+            </div>
+            <div class="p-6">
+                <!-- Loading Spinner -->
+                <div id="loadingSpinner" class="text-center py-8 hidden">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p class="mt-2 text-gray-600">Loading messages...</p>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="bg-red-50 border border-red-200 rounded-md p-4 mb-4 hidden">
+                    <div class="flex">
+                        <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <span id="errorText" class="text-red-800"></span>
+                            <button type="button" class="float-right text-red-400 hover:text-red-600"
+                                onclick="hideError()">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                        clip-rule="evenodd"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Messages Table -->
+                <div class="overflow-x-auto">
+                    <table id="contactTable" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <a href="#" class="flex items-center hover:text-gray-700 transition-colors"
+                                        data-sort="id">
+                                        ID
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </a>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <a href="#" class="flex items-center hover:text-gray-700 transition-colors"
+                                        data-sort="name">
+                                        Name
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </a>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <a href="#" class="flex items-center hover:text-gray-700 transition-colors"
+                                        data-sort="phone">
+                                        Phone
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </a>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <a href="#" class="flex items-center hover:text-gray-700 transition-colors"
+                                        data-sort="email">
+                                        Email
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </a>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Message
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="contactTableBody" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="emptyState" class="text-center py-12 hidden">
+                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                    <h4 class="text-lg font-medium text-gray-900 mb-2">No Messages Found</h4>
+                    <p class="text-gray-500">Try adjusting your search criteria.</p>
+                </div>
+                
+                <!-- Pagination -->
+                <nav id="paginationContainer" class="mt-6 hidden" aria-label="Contact messages pagination">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1 flex justify-between sm:hidden">
+                            <a href="#" id="prevPageMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Previous
+                            </a>
+                            <a href="#" id="nextPageMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Next
+                            </a>
+                        </div>
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-gray-700">
+                                    Showing <span id="showingStart" class="font-medium">1</span> to <span id="showingEnd" class="font-medium">10</span> of
+                                    <span id="showingTotal" class="font-medium">0</span> results
+                                </p>
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" id="pagination">
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Message Modal -->
+<div id="messageModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Message Details</h3>
+                <button type="button" onclick="closeMessageModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Name:</label>
+                    <p id="modalName" class="text-gray-900"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone:</label>
+                    <p id="modalPhone" class="text-gray-900"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email:</label>
+                    <p id="modalEmail" class="text-gray-900"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Message:</label>
+                    <p id="modalMessage" class="text-gray-900 whitespace-pre-wrap"></p>
+                </div>
+            </div>
+            <div class="flex justify-end mt-6">
+                <button type="button" onclick="closeMessageModal()"
+                    class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium rounded-md transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        const config = {
+            apiUrl: '{% url "web_contact_data" %}',
+            csrfToken: '{{ csrf_token }}',
+            currentPage: 1,
+            itemsPerPage: 10,
+            sortBy: 'id',
+            sortOrder: 'desc'
+        };
+
+        init();
+
+        function init() {
+            loadContactMessages();
+            setupEventListeners();
+        }
+
+        function setupEventListeners() {
+            let searchTimeout;
+            $('#searchInput').on('input', function () {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    config.currentPage = 1;
+                    loadContactMessages();
+                }, 300);
+            });
+
+            $('#refreshBtn').on('click', function () {
+                loadContactMessages();
+            });
+
+            $('[data-sort]').on('click', function (e) {
+                e.preventDefault();
+                const sortField = $(this).data('sort');
+                if (config.sortBy === sortField) {
+                    config.sortOrder = config.sortOrder === 'asc' ? 'desc' : 'asc';
+                } else {
+                    config.sortBy = sortField;
+                    config.sortOrder = 'asc';
+                }
+                loadContactMessages();
+                updateSortIndicators();
+            });
+
+            $('#messageModal').on('click', function (e) {
+                if (e.target === this) {
+                    closeMessageModal();
+                }
+            });
+        }
+
+        function loadContactMessages() {
+            showLoading();
+            hideError();
+
+            const params = {
+                page: config.currentPage,
+                per_page: config.itemsPerPage,
+                search_value: $('#searchInput').val(),
+                sort_by: config.sortBy,
+                sort_order: config.sortOrder
+            };
+
+            $.ajax({
+                url: config.apiUrl,
+                method: 'GET',
+                data: params,
+                headers: {
+                    'X-CSRFToken': config.csrfToken
+                },
+                success: function (response) {
+                    hideLoading();
+                    console.log(response);
+                    renderContactTable(response.contact);
+                    renderPagination(response);
+                    updateContactCount(response.total);
+
+                    if (response.contact.length === 0) {
+                        showEmptyState();
+                    } else {
+                        hideEmptyState();
+                    }
+                },
+                error: function (xhr, status, error) {
+                    hideLoading();
+                    showError('Failed to load contact messages: ' + error);
+                    console.error('Error loading messages:', error);
+                }
+            });
+        }
+
+        function renderContactTable(contacts) {
+            const tbody = $('#contactTableBody');
+            tbody.empty();
+
+            contacts.forEach(contact => {
+                const messagePreview = contact.message.length > 50 
+                    ? contact.message.substring(0, 50) + '...' 
+                    : contact.message;
+
+                const row = `
+                <tr data-contact-id="${contact.id}" class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${contact.id}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${contact.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${contact.phone || 'N/A'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${contact.email || 'N/A'}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900">${messagePreview}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="viewMessage(${contact.id}, '${escapeHtml(contact.name)}', '${contact.phone || 'N/A'}', '${contact.email || 'N/A'}', '${escapeHtml(contact.message)}')" 
+                            class="text-blue-600 hover:text-blue-900 p-1 rounded" title="View Full Message">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+            `;
+                tbody.append(row);
+            });
+        }
+
+        function renderPagination(data) {
+            const container = $('#pagination');
+            container.empty();
+
+            if (data.total_pages <= 1) {
+                $('#paginationContainer').hide();
+                return;
+            }
+
+            $('#paginationContainer').show();
+            
+            const start = ((data.current_page - 1) * config.itemsPerPage) + 1;
+            const end = Math.min(data.current_page * config.itemsPerPage, data.total);
+            $('#showingStart').text(start);
+            $('#showingEnd').text(end);
+            $('#showingTotal').text(data.total);
+
+            const prevDisabled = data.current_page <= 1;
+            container.append(`
+                <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${prevDisabled ? 'cursor-not-allowed opacity-50' : ''}" data-page="${data.current_page - 1}" ${prevDisabled ? 'onclick="return false;"' : ''}>
+                    <span class="sr-only">Previous</span>
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </a>
+            `);
+
+            const maxVisiblePages = 5;
+            const startPage = Math.max(1, data.current_page - Math.floor(maxVisiblePages / 2));
+            const endPage = Math.min(data.total_pages, startPage + maxVisiblePages - 1);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const active = i === data.current_page;
+                const activeClasses = active ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50';
+                container.append(`
+                    <a href="#" class="relative inline-flex items-center px-4 py-2 border text-sm font-medium ${activeClasses}" data-page="${i}">
+                        ${i}
+                    </a>
+                `);
+            }
+
+            const nextDisabled = data.current_page >= data.total_pages;
+            container.append(`
+                <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${nextDisabled ? 'cursor-not-allowed opacity-50' : ''}" data-page="${data.current_page + 1}" ${nextDisabled ? 'onclick="return false;"' : ''}>
+                    <span class="sr-only">Next</span>
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </a>
+            `);
+
+            container.find('a[data-page]').on('click', function (e) {
+                e.preventDefault();
+                const page = parseInt($(this).data('page'));
+                if (page && page !== config.currentPage && page >= 1 && page <= data.total_pages) {
+                    config.currentPage = page;
+                    loadContactMessages();
+                }
+            });
+        }
+
+        function updateSortIndicators() {
+            $('[data-sort] svg').removeClass('text-blue-600').addClass('text-gray-400');
+            
+            const currentSortElement = $(`[data-sort="${config.sortBy}"]`);
+            currentSortElement.find('svg').removeClass('text-gray-400').addClass('text-blue-600');
+            
+            const svg = currentSortElement.find('svg');
+            if (config.sortOrder === 'desc') {
+                svg.css('transform', 'rotate(180deg)');
+            } else {
+                svg.css('transform', 'rotate(0deg)');
+            }
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        window.viewMessage = function(id, name, phone, email, message) {
+            $('#modalName').text(name);
+            $('#modalPhone').text(phone);
+            $('#modalEmail').text(email);
+            $('#modalMessage').text(message.replace(/\\'/g, "'"));
+            $('#messageModal').removeClass('hidden');
+        };
+
+        window.closeMessageModal = function() {
+            $('#messageModal').addClass('hidden');
+        };
+
+        function showLoading() {
+            $('#loadingSpinner').removeClass('hidden');
+            $('#contactTable').addClass('opacity-50');
+        }
+
+        function hideLoading() {
+            $('#loadingSpinner').addClass('hidden');
+            $('#contactTable').removeClass('opacity-50');
+        }
+
+        function showError(message) {
+            $('#errorText').text(message);
+            $('#errorMessage').removeClass('hidden');
+            setTimeout(hideError, 5000);
+        }
+
+        function hideError() {
+            $('#errorMessage').addClass('hidden');
+        }
+
+        function showEmptyState() {
+            $('#emptyState').removeClass('hidden');
+            $('#contactTable').addClass('hidden');
+            $('#paginationContainer').addClass('hidden');
+        }
+
+        function hideEmptyState() {
+            $('#emptyState').addClass('hidden');
+            $('#contactTable').removeClass('hidden');
+        }
+
+        function updateContactCount(count) {
+            $('#contactCount').text(count);
+        }
+
+        window.hideError = hideError;
+    });
+</script>
+
+{% endblock content %}

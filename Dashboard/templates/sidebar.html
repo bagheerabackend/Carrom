@@ -32,6 +32,13 @@
         <li class="px-1 mb-2 text-lg">
             <a href="{% url 'app_settings' %}" class=" {% if request.resolver_match.url_name == 'app_settings' %}active{% endif %}">App Settings</a>
         </li>
+        <li class="dropdown px-1 mb-2 text-lg {% if request.resolver_match.url_name in 'commission,credit_transfers,debit_transfers' %}drop-active{% endif %}">
+            <a href="#transactions" class="dropdown-toggle ">Website</a>
+            <div class="dropdown-menu">
+                <a href="{% url 'web_games' %}" class="{% if request.resolver_match.url_name == 'web_games' %}active{% endif %}">Games</a>
+                <a href="{% url 'web_contact' %}" class="{% if request.resolver_match.url_name == 'web_contact' %}active{% endif %}">Contact Us</a>
+            </div>
+        </li>
     </ul>
 </div>
 

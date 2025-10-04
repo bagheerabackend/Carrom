@@ -15,6 +15,7 @@ from Player.models import Player
 from Transactions.models import TransactionLog
 from Games.models import Game
 from Settings.models import AppSettings
+from Website.models import *
 
 User = get_user_model()
 
@@ -512,3 +513,132 @@ def edit_setting(request, id):
         setting.save()
         return JsonResponse("Success", safe=False)
     return JsonResponse({"message": "error"})
+
+@login_required(login_url='admin_login')
+def web_games_view(request):
+    return render(request, "web_games.html")
+
+@login_required(login_url='admin_login')
+def web_games_data(request):
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 10))
+    search_value = request.GET.get('search_value')
+    sort_by = request.GET.get('sort_by', 'id')
+    sort_order = '' if request.GET.get('sort_order') == 'asc' else '-'
+    status = request.GET.get('status')
+    q = Q()
+    if status:
+        q &= Q(is_active=True) if status == "active" else Q(is_active=False)
+    if search_value:
+        q &= Q(name__icontains=search_value)
+    setting = WebGames.objects.filter(q).order_by(f'{sort_order}{sort_by}')
+    paginator = Paginator(setting, per_page)
+    page_obj = paginator.get_page(page)
+    game_list = []
+    for game in page_obj.object_list:
+        game_list.append({
+            "id": game.id,
+            "name": game.name,
+            "description": game.description,
+            "bg_image": game.bg_image.url if game.bg_image else "",
+            "game_image": game.game_image.url if game.game_image else "",
+            "live": game.live,
+            "playstore_url": game.playstore_url,
+            "appstore_url": game.appstore_url,
+            "is_active": game.is_active,
+        })
+    context = {
+        'total': paginator.count,
+        'setting': game_list,
+        'current_page': page_obj.number,
+        'per_page': per_page,
+        'total_pages': paginator.num_pages,
+        'has_next': page_obj.has_next(),
+        'has_previous': page_obj.has_previous(),
+    }
+    return JsonResponse(context, safe=False)
+    
+@login_required(login_url='admin_login')
+def block_web_game(request, id):
+    if WebGames.objects.filter(id=id).exists():
+        game = WebGames.objects.get(id=id)
+        game.is_active = not game.is_active
+        game.save()
+        return JsonResponse("Success", safe=False)
+    return JsonResponse({"message": "error"})
+
+@login_required(login_url='admin_login')
+@require_http_methods(["POST"])
+@require_http_methods(["POST"])
+def add_web_games(request):
+    name = request.POST.get('name')
+    live = True if request.POST.get('live') == 'true' else False
+    bg_image = request.FILES.get('bg_image')
+    game_image = request.FILES.get('game_image')
+    description = request.POST.get('description')
+    playstore_url = request.POST.get('playstore_url')
+    appstore_url = request.POST.get('appstore_url')
+    game = WebGames(
+        name = name,
+        live = live,
+        bg_image = bg_image,
+        game_image = game_image,
+        description = description,
+        playstore_url = playstore_url,
+        appstore_url = appstore_url,
+    )
+    game.save()
+    return JsonResponse("Success", safe=False)
+
+@login_required(login_url='admin_login')
+@require_http_methods(["POST"])
+def edit_web_games(request, id):
+    if WebGames.objects.filter(id=id).exists():
+        game = WebGames.objects.get(id=id)
+        game.name = request.POST.get('name', game.name)
+        game.live = request.POST.get('live', game.live)
+        game.bg_image = request.FILES.get('bg_image', game.bg_image)
+        game.game_image = request.FILES.get('game_image', game.game_image)
+        game.description = request.POST.get('description', game.description)
+        game.playstore_url = request.POST.get('playstore_url', game.playstore_url)
+        game.appstore_url = request.POST.get('appstore_url', game.appstore_url)
+        game.save()
+        return JsonResponse("Success", safe=False)
+    return JsonResponse({"message": "error"})
+
+@login_required(login_url='admin_login')
+@require_http_methods(["GET"])
+def delete_web_games(request, id):
+    if WebGames.objects.filter(id=id).exists():
+        WebGames.objects.get(id=id).delete()
+        return JsonResponse("Success", safe=False)
+    return JsonResponse({"message": "error"})
+
+@login_required(login_url='admin_login')
+def web_contact_view(request):
+    return render(request, "web_contact.html")
+
+@login_required(login_url='admin_login')
+def web_contact_data(request):
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 10))
+    search_value = request.GET.get('search_value')
+    sort_by = request.GET.get('sort_by', 'id')
+    sort_order = '' if request.GET.get('sort_order') == 'asc' else '-'
+    q = Q()
+    if search_value:
+        q &= (Q(name__icontains=search_value) | Q(phone__icontains=search_value))
+    setting = ContactUsWeb.objects.filter(q).order_by(f'{sort_order}{sort_by}')
+    paginator = Paginator(setting, per_page)
+    page_obj = paginator.get_page(page)
+    contact_list = list(page_obj.object_list.values('id', 'name', 'phone', 'email', 'message'))
+    context = {
+        'total': paginator.count,
+        'contact': contact_list,
+        'current_page': page_obj.number,
+        'per_page': per_page,
+        'total_pages': paginator.num_pages,
+        'has_next': page_obj.has_next(),
+        'has_previous': page_obj.has_previous(),
+    }
+    return JsonResponse(context, safe=False)

@@ -31,4 +31,12 @@ urlpatterns = [
     path('app-settings', app_settings_view, name='app_settings'),
     path('add-settings', add_setting, name='add_settings'),
     path('edit-settings', edit_setting, name='edit_settings'),
+    path('web-games', web_games_view, name='web_games'),
+    path('web-games-data', web_games_data, name='web_games_data'),
+    path('add-web-games', add_web_games, name='add_web_games'),
+    path('edit-web-games/<int:id>/', edit_web_games, name='edit_web_games'),
+    path('delete-web-games/<int:id>/', delete_web_games, name='delete_web_games'),
+    path('block-web-games/<int:id>/', block_web_game, name='block_web_game'),
+    path('web-contact', web_contact_view, name='web_contact'),
+    path('web-contact-data', web_contact_data, name='web_contact_data'),
 ]
