@@ -10,7 +10,7 @@ from asgiref.sync import sync_to_async
 match_api = Router(tags=["Matches"])
 
 ################################################ Match Making ################################################
-@match_api.post("/match-making", response={201: MatchStartingOut, 206: MatchMakingOut, 404: Message, 402: Message, 409: Message})
+@match_api.post("/match-making", response={201: MatchStartingOut, 206: MatchMakingOut, 404: Message, 402: Message, 409: Message, 405: Message})
 async def match_making(request, data: MatchMakingIn):
     if await Game.objects.filter(id=data.game_id).aexists():
         user = request.auth
@@ -36,6 +36,8 @@ async def match_making(request, data: MatchMakingIn):
             await user.asave()
             if await Matches.objects.filter(game=game, status="waiting").aexists():
                 match = await Matches.objects.filter(game=game, status="waiting").afirst()
+                if match.player1 == user:
+                    return 405, {"message": "User already joined as player 1"}
                 match.player2 = user
                 match.status = "full"
                 match.winning_amount = game.winning_amount
