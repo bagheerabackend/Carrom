@@ -9,6 +9,7 @@ from Games.views import game_api
 from Matches.views import match_api
 from Settings.views import settings_api
 from Transactions.views import transaction_api
+from Website.views import web_api
 
 api = NinjaAPI(auth=AsyncJWTAuth())
 
@@ -17,6 +18,7 @@ api.add_router("/games/", game_api)
 api.add_router("/matches/", match_api)
 api.add_router("/settings/", settings_api)
 api.add_router("/transactions/", transaction_api)
+api.add_router("/web/", web_api)
 
 urlpatterns = [
     path('dashboard/', include('Dashboard.urls')),
