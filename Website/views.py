@@ -11,7 +11,18 @@ web_api = Router(tags=["Web"])
 @web_api.get("/games", auth=None, response={200: List[WebGameSchema]})
 async def get_games(request):
     q = Q(is_active=True)
-    games = [game async for game in WebGames.objects.filter(q).values("id", "name",  "description", "bg_image", "game_image", "live", "playstore_url", "appstore_url")]
+    games = []
+    async for game in WebGames.objects.filter(q):
+        games.append({
+            "id": game.id,
+            "name": game.name,
+            "description": game.description,
+            "bg_image": game.bg_image.url if game.bg_image else '',
+            "game_image": game.game_image.url if game.game_image else '',
+            "live": game.live,
+            "playstore_url": game.playstore_url,
+            "appstore_url": game.appstore_url,
+        })
     return 200, games
 
 @web_api.post("/contact-us", auth=None, response={201: Message})
