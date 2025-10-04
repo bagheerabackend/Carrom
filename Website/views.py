@@ -8,13 +8,13 @@ from django.db.models import Q
 web_api = Router(tags=["Web"])
 
 ################################################ Games ################################################
-@web_api.get("/games", response={200: List[WebGameSchema]})
+@web_api.get("/games", auth=None, response={200: List[WebGameSchema]})
 async def get_games(request):
     q = Q(is_active=True)
     games = [game async for game in WebGames.objects.filter(q).values("id", "name",  "description", "bg_image", "game_image", "live", "playstore_url", "appstore_url")]
     return 200, games
 
-@web_api.post("/contact-us", response={201: Message})
+@web_api.post("/contact-us", auth=None, response={201: Message})
 async def create_contact(request, data: ContactSchema):
     contact = ContactUsWeb(**data.dict())
     contact.asave()
