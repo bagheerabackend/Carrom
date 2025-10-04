@@ -17,5 +17,5 @@ async def get_games(request):
 @web_api.post("/contact-us", auth=None, response={201: Message})
 async def create_contact(request, data: ContactSchema):
     contact = ContactUsWeb(**data.dict())
-    contact.asave()
+    await contact.asave()
     return 201, {"message": "Message send succesfully!"}
