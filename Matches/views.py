@@ -57,6 +57,18 @@ async def match_making(request, data: MatchMakingIn):
                     "player2_avatar_no": match.player2.avatar_no,
                     "winning_amount": match.winning_amount
                 }
+            if await Matches.objects.filter(game=game, player1=user, status="full").aexists():
+                match = await Matches.objects.filter(game=game, player1=user, status="full").afirst()
+                return 201, {
+                    "match_id": match.id,
+                    "player1_id": player1_id,
+                    "player1_name": match.player1.name,
+                    "player1_avatar_no": match.player1.avatar_no,
+                    "player2_id": player2_id,
+                    "player2_name": match.player2.name,
+                    "player2_avatar_no": match.player2.avatar_no,
+                    "winning_amount": match.winning_amount
+                }
             match = Matches(game=game, player1=user)
             await match.asave()
             return 206, {
@@ -158,6 +170,7 @@ async def match_result(request, data: MatchResultIn):
                     "winner_id": winner_id,
                     "winning_amount": match.winning_amount
                 }
+            return 200, {"message": "Winner must be either player1 or player2"}
         return 200, {
             "match_id": match.id,
             "player1_id": player1_id,
