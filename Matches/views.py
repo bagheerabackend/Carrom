@@ -59,7 +59,7 @@ async def match_making(request, data: MatchMakingIn):
                     "winning_amount": match.winning_amount
                 }
             q = Q(game=game, status="full")
-            q = (Q(player1=user) | Q(player2=user))
+            q &= (Q(player1=user) | Q(player2=user))
             if await Matches.objects.filter(q).aexists():
                 match = await Matches.objects.filter(q).afirst()
                 player1_id = await sync_to_async(lambda: match.player1.player_id)()
