@@ -6,6 +6,7 @@ from Player.schema import Message
 from Player.models import Player
 from .signals import player_disconnected_signal
 from asgiref.sync import sync_to_async
+from django.db.models import Q
 
 match_api = Router(tags=["Matches"])
 
@@ -21,20 +22,20 @@ async def match_making(request, data: MatchMakingIn):
         entry_amount = user.bonus if game.type == "bonus" else (user.coin + user.cashback)
 
         if (entry_amount) >= game.fee:
-            if game.type == "bonus":
-                user.bonus -= game.fee
-            else:
-                if user.cashback >= game.fee:
-                    user.cashback -= game.fee
-                else:
-                    if user.cashback > 0:
-                        money = user.cashback
-                        user.cashback = 0
-                        user.coin -= (game.fee - money)
-                    else:
-                        user.coin -= game.fee
-            await user.asave()
             if await Matches.objects.filter(game=game, status="waiting").aexists():
+                if game.type == "bonus":
+                    user.bonus -= game.fee
+                else:
+                    if user.cashback >= game.fee:
+                        user.cashback -= game.fee
+                    else:
+                        if user.cashback > 0:
+                            money = user.cashback
+                            user.cashback = 0
+                            user.coin -= (game.fee - money)
+                        else:
+                            user.coin -= game.fee
+                await user.asave()
                 match = await Matches.objects.filter(game=game, status="waiting").afirst()
                 player1 = await sync_to_async(lambda: match.player1)()
                 if player1 == user:
@@ -57,8 +58,12 @@ async def match_making(request, data: MatchMakingIn):
                     "player2_avatar_no": match.player2.avatar_no,
                     "winning_amount": match.winning_amount
                 }
-            if await Matches.objects.filter(game=game, player1=user, status="full").aexists():
-                match = await Matches.objects.filter(game=game, player1=user, status="full").afirst()
+            q = Q(game=game, status="full")
+            q = (Q(player1=user) | Q(player2=user))
+            if await Matches.objects.filter(q).aexists():
+                match = await Matches.objects.filter(q).afirst()
+                player1_id = await sync_to_async(lambda: match.player1.player_id)()
+                player2_id = await sync_to_async(lambda: match.player2.player_id)()
                 return 201, {
                     "match_id": match.id,
                     "player1_id": player1_id,
@@ -69,6 +74,19 @@ async def match_making(request, data: MatchMakingIn):
                     "player2_avatar_no": match.player2.avatar_no,
                     "winning_amount": match.winning_amount
                 }
+            if game.type == "bonus":
+                user.bonus -= game.fee
+            else:
+                if user.cashback >= game.fee:
+                    user.cashback -= game.fee
+                else:
+                    if user.cashback > 0:
+                        money = user.cashback
+                        user.cashback = 0
+                        user.coin -= (game.fee - money)
+                    else:
+                        user.coin -= game.fee
+            await user.asave()
             match = Matches(game=game, player1=user)
             await match.asave()
             return 206, {
