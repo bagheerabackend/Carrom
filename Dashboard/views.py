@@ -596,7 +596,7 @@ def edit_web_games(request, id):
     if WebGames.objects.filter(id=id).exists():
         game = WebGames.objects.get(id=id)
         game.name = request.POST.get('name', game.name)
-        live = (True if request.POST.get('live') else False) if request.POST.get('live') else game.live
+        live = (True if request.POST.get('live') == "true" else False) if request.POST.get('live') else game.live
         game.live = live
         game.bg_image = request.FILES.get('bg_image', game.bg_image)
         game.game_image = request.FILES.get('game_image', game.game_image)
