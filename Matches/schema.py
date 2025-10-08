@@ -5,6 +5,7 @@ class MatchMakingIn(Schema):
     game_id: int
 
 class MatchMakingOut(Schema):
+    match_id: int
     player1_id: int
     player1_name: str
     player1_avatar_no: int

@@ -90,6 +90,7 @@ async def match_making(request, data: MatchMakingIn):
             match = Matches(game=game, player1=user)
             await match.asave()
             return 206, {
+                "match_id": match.id,
                 "player1_id": match.player1.id,
                 "player1_name": match.player1.name,
                 "player1_avatar_no": match.player1.avatar_no
