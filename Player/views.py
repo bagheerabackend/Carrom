@@ -63,7 +63,7 @@ async def login(request, data: LoginIn):
     if not await Player.objects.filter(username=data.username).aexists():
         return 405, {"message": "Invalid credentials"}
     user = await Player.objects.aget(username=data.username)
-    if not user.check_password(data.password):
+    if not check_password(data.password, user.password):
         return 405, {"message": "Invalid credentials"}
     if user.is_blocked:
         return 409, {"message": "Player blocked"}
