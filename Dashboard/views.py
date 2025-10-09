@@ -198,7 +198,15 @@ def bonus_games_data(request):
     search_value = request.GET.get('search_value')
     sort_by = request.GET.get('sort_by', 'id')
     sort_order = '' if request.GET.get('sort_order') == 'asc' else '-'
+    from_date = request.GET.get('from_date')
+    to_date = request.GET.get('to_date')
     q = Q(status__in=['completed', 'full'], game__type='bonus')
+    if from_date and to_date:
+        to_date_str = datetime.strptime(to_date, '%Y-%m-%d') + timedelta(days=1)
+        q &= Q(created_at__range=[from_date, to_date_str])
+    else:
+        today = timezone.now().date()
+        q &= Q(created_at__date=today)
     if search_value:
         q &= (Q(player1__name__icontains=search_value) | Q(player1__phone__icontains=search_value) | Q(player2__name__icontains=search_value) | Q(player2__phone__icontains=search_value))
     matches = Matches.objects.filter(q).order_by(f'{sort_order}{sort_by}')
