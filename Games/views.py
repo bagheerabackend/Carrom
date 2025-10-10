@@ -4,12 +4,17 @@ from typing import *
 from .models import *
 from Matches.models import *
 from django.db.models import Q
+from django.core.cache import cache
 
 game_api = Router(tags=["Game"])
 
 ################################################ Games ################################################
 @game_api.get("/", response={200: List[GameListOut]})
 async def get_games(request, type):
+    cache_key = f"games_list_{type}" if type else "games_list_all"
+    cached_games = cache.get(cache_key)
+    if cached_games:
+        return 200, cached_games
     q = Q(is_active=True)
     if type:
         q &= Q(type=type)
@@ -21,4 +26,5 @@ async def get_games(request, type):
             "game": i,
             "total_players": total_players
         })
+    cache.set(cache_key, game_list, 120)
     return 200, game_list

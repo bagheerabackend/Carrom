@@ -102,7 +102,13 @@ async def coin_details(request):
     user = request.auth
     if user.is_blocked:
         return 409, {"message": "Player blocked"}
-    return 200, {"bonus": user.bonus, "coin": user.coin}
+    cache_key = f"coins_{user.player_id}"
+    cached_coins = cache.get(cache_key)
+    if cached_coins:
+        return 200, cached_coins
+    coin_data = {"bonus": user.bonus, "coin": user.coin}
+    cache.set(cache_key, coin_data, 30)
+    return 200, coin_data
 
 ################################################ Profile Panel ################################################
 @user_api.get("/profile-details", response={200: PlayerOut, 409: Message})
@@ -110,10 +116,14 @@ async def get_profile(request):
     user = request.auth
     if user.is_blocked:
         return 409, {"message": "Player blocked"}
+    cache_key = f"player_profile_{user.player_id}"
+    cached_profile = cache.get(cache_key)
+    if cached_profile:
+        return 200, cached_profile
     total_count = await Matches.objects.filter(Q(player1=user) | Q(player2=user)).acount()
     winning_count = await Matches.objects.filter(winner=user).acount()
     losing_count = total_count - winning_count
-    return 200, PlayerOut(
+    profile_data = PlayerOut(
         player_id=user.player_id,
         name=user.name,
         avatar_no=user.avatar_no,
@@ -121,6 +131,8 @@ async def get_profile(request):
         total_wons=winning_count,
         total_loss=losing_count
     )
+    cache.set(cache_key, profile_data, 300)
+    return 200, profile_data
 
 @user_api.patch("/update-profile", response={200: Message, 404: Message, 409: Message})
 async def update_profile(request, data: PatchDict[UserPatch]):
@@ -133,6 +145,7 @@ async def update_profile(request, data: PatchDict[UserPatch]):
     for key, value in data.items():
         setattr(user, key, value)
     await user.asave()
+    cache.delete(f"player_profile_{user.player_id}")
     return 200, {"message": "Profile updated successfully"}
 
 @user_api.get("/delete-account", response={200: Message, 409: Message})
@@ -140,6 +153,9 @@ async def delete_account(request):
     user = request.auth
     if user.is_blocked:
         return 409, {"message": "Player blocked"}
+    cache.delete(f"player_profile_{user.player_id}")
+    cache.delete(f"coins_{user.player_id}")
+    cache.delete(f"bank_details_{user.player_id}")
     await user.adelete()
     return 200, {"message": "Account deleted successfully"}
 
@@ -155,6 +171,7 @@ async def add_bank_details(request, data: BankDetailsIn):
     #     return 404, {"message": "Account number already exists"}
     bank_details = BankDetails(**data.dict(), user=user)
     await bank_details.asave()
+    cache.delete(f"bank_details_{user.player_id}")
     return 201, {"message": "Bank details added successfully"}
 
 @user_api.get("/get-bank-details", response={200: BankDetailsOut, 404: Message, 405: Message})
@@ -162,7 +179,15 @@ async def get_bank_details(request):
     user = request.auth
     if user.is_blocked:
         return 409, {"message": "Player blocked"}
+    cache_key = f"bank_details_{user.player_id}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
     if await BankDetails.objects.filter(user=user).aexists():
         bank_details = await BankDetails.objects.aget(user=user)
-        return 200, bank_details
-    return 404, {"message": "Bank details not found"}
+        result = (200, bank_details)
+        cache.set(cache_key, result, 3600) 
+        return result
+    result = (404, {"message": "Bank details not found"})
+    cache.set(cache_key, result, 300)
+    return result

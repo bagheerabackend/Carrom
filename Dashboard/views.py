@@ -16,6 +16,7 @@ from Transactions.models import TransactionLog
 from Games.models import Game
 from Settings.models import AppSettings
 from Website.models import *
+from django.core.cache import cache
 
 User = get_user_model()
 
@@ -279,8 +280,11 @@ def add_game(request):
     image = request.FILES.get('image')
     fee = request.POST.get('fee')
     winning_amount = request.POST.get('winning_amount')
-    game = Game(name=name, image=image, fee=fee, winning_amount=winning_amount)
+    type = request.POST.get('type')
+    game = Game(name=name, image=image, type=type, fee=fee, winning_amount=winning_amount)
     game.save()
+    cache.delete("games_list_all")
+    cache.delete(f"games_list_{type}")
     return JsonResponse("Success", safe=False)
 
 @login_required(login_url='admin_login')
@@ -291,8 +295,11 @@ def edit_game(request, id):
         game.name = request.POST.get('name', game.name)
         game.image = request.FILES.get('image', game.image.url)
         game.fee = request.POST.get('fee', game.fee)
+        game.type = request.POST.get('type', game.type)
         game.winning_amount = request.POST.get('winning_amount', game.winning_amount)
         game.save()
+        cache.delete("games_list_all")
+        cache.delete(f"games_list_{game.type}")
         return JsonResponse("Success", safe=False)
     return JsonResponse({"message": "error"})
 
@@ -300,6 +307,8 @@ def edit_game(request, id):
 def delete_game(request, id):
     if Game.objects.filter(id=id).exists():
         game = Game.objects.get(id=id)
+        cache.delete("games_list_all")
+        cache.delete(f"games_list_{game.type}")
         game.delete()
         return JsonResponse("Success", safe=False)
     return JsonResponse({"message": "error"})
@@ -310,6 +319,8 @@ def block_game(request, id):
         game = Game.objects.get(id=id)
         game.is_active = not game.is_active
         game.save()
+        cache.delete("games_list_all")
+        cache.delete(f"games_list_{game.type}")
         return JsonResponse("Success", safe=False)
     return JsonResponse({"message": "error"})
 
@@ -518,6 +529,7 @@ def edit_setting(request, id):
         setting.bonus_point = request.POST.get('bonus_point', setting.bonus_point)
         setting.withdrawal_limit = request.POST.get('withdrawal_limit', setting.withdrawal_limit)
         setting.daily_withdraw_count = request.POST.get('daily_withdraw_count', setting.daily_withdraw_count)
+        cache.delete("app_settings")
         setting.save()
         return JsonResponse("Success", safe=False)
     return JsonResponse({"message": "error"})
@@ -596,6 +608,7 @@ def add_web_games(request):
         appstore_url = appstore_url,
     )
     game.save()
+    cache.delete("web_games_list")
     return JsonResponse("Success", safe=False)
 
 @login_required(login_url='admin_login')
@@ -612,6 +625,7 @@ def edit_web_games(request, id):
         game.playstore_url = request.POST.get('playstore_url', game.playstore_url)
         game.appstore_url = request.POST.get('appstore_url', game.appstore_url)
         game.save()
+        cache.delete("web_games_list")
         return JsonResponse("Success", safe=False)
     return JsonResponse({"message": "error"})
 
@@ -620,6 +634,7 @@ def edit_web_games(request, id):
 def delete_web_games(request, id):
     if WebGames.objects.filter(id=id).exists():
         WebGames.objects.get(id=id).delete()
+        cache.delete("web_games_list")
         return JsonResponse("Success", safe=False)
     return JsonResponse({"message": "error"})
 
