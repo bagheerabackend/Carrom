@@ -7,6 +7,7 @@ from Player.models import Player
 from .signals import player_disconnected_signal
 from asgiref.sync import sync_to_async
 from django.db.models import Q
+from django.core.cache import cache
 
 match_api = Router(tags=["Matches"])
 
@@ -23,19 +24,6 @@ async def match_making(request, data: MatchMakingIn):
 
         if (entry_amount) >= game.fee:
             if await Matches.objects.filter(game=game, status="waiting").aexists():
-                if game.type == "bonus":
-                    user.bonus -= game.fee
-                else:
-                    if user.cashback >= game.fee:
-                        user.cashback -= game.fee
-                    else:
-                        if user.cashback > 0:
-                            money = user.cashback
-                            user.cashback = 0
-                            user.coin -= (game.fee - money)
-                        else:
-                            user.coin -= game.fee
-                await user.asave()
                 match = await Matches.objects.filter(game=game, status="waiting").afirst()
                 player1 = await sync_to_async(lambda: match.player1)()
                 if player1 == user:
@@ -86,6 +74,7 @@ async def match_making(request, data: MatchMakingIn):
                         user.coin -= (game.fee - money)
                     else:
                         user.coin -= game.fee
+            await sync_to_async(cache.delete)(f"coins_{user.player_id}")
             await user.asave()
             match = Matches(game=game, player1=user)
             await match.asave()
@@ -111,6 +100,7 @@ async def cancel_match(request, match_id: int):
                 user.cashback += game.fee
             else:
                 user.coin += game.fee
+        await sync_to_async(cache.delete)(f"coins_{user.player_id}")
         await user.asave()
         await match.adelete()
         if user.is_blocked:
@@ -173,6 +163,7 @@ async def match_result(request, data: MatchResultIn):
                 else:
                     winner.withdrawable_coin += (match.winning_amount - match.game.fee)
                     winner.coin += match.winning_amount
+                await sync_to_async(cache.delete)(f"coins_{winner.player_id}")
                 await winner.asave()
                 match.winner = winner
                 winner_id = await sync_to_async(lambda: winner.player_id)()
@@ -212,6 +203,7 @@ async def update_bonus(request, bonus: float):
     if user.bonus != 0:
         if bonus > 0:
             user.bonus -= bonus
+            await sync_to_async(cache.delete)(f"coins_{user.player_id}")
             await user.asave()
             return 200, {"message": "Bonus updated successfully"}
         return 404, {"message": "Invalid bonus amount"}
