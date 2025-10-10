@@ -13,7 +13,7 @@ settings_api = Router(tags=["Settings"])
 @settings_api.get("/app-settings", auth=None, response={200: Settings, 404: Message})
 async def app_settings(request):
     cache_key = "app_settings"
-    cached_settings = cache.get(cache_key)
+    cached_settings = await sync_to_async(cache.get)(cache_key)
     if cached_settings:
         return 200, cached_settings
     if await AppSettings.objects.aexists():
@@ -23,6 +23,6 @@ async def app_settings(request):
             "maintenance_message": settings.maintenance_message,
             "app_version": settings.version
         }
-        cache.set(cache_key, settings_data, 3600)
+        await sync_to_async(cache.set)(cache_key, settings_data, 3600)
         return 200, settings_data
     return 404, {"message": "Settings not found"}

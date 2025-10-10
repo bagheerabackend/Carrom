@@ -5,6 +5,7 @@ from .models import *
 from Matches.models import *
 from django.db.models import Q
 from django.core.cache import cache
+from asgiref.sync import sync_to_async
 
 game_api = Router(tags=["Game"])
 
@@ -12,7 +13,7 @@ game_api = Router(tags=["Game"])
 @game_api.get("/", response={200: List[GameListOut]})
 async def get_games(request, type):
     cache_key = f"games_list_{type}" if type else "games_list_all"
-    cached_games = cache.get(cache_key)
+    cached_games = await sync_to_async(cache.get)(cache_key)
     if cached_games:
         return 200, cached_games
     q = Q(is_active=True)
@@ -26,5 +27,5 @@ async def get_games(request, type):
             "game": i,
             "total_players": total_players
         })
-    cache.set(cache_key, game_list, 120)
+    await sync_to_async(cache.set)(cache_key, game_list, 120)
     return 200, game_list
