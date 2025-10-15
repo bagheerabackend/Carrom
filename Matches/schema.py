@@ -6,7 +6,7 @@ class MatchMakingIn(Schema):
 
 class MatchMakingOut(Schema):
     match_id: int
-    player1_id: int
+    player1_id: str
     player1_name: str
     player1_avatar_no: int
 

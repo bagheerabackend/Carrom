@@ -26,7 +26,8 @@ async def match_making(request, data: MatchMakingIn):
             if await Matches.objects.filter(game=game, status="waiting").aexists():
                 match = await Matches.objects.filter(game=game, status="waiting").afirst()
                 player1 = await sync_to_async(lambda: match.player1)()
-                if player1 == user and await sync_to_async(lambda: match.player2)() is None:
+                player2 = await sync_to_async(lambda: match.player2)()
+                if player1 == user and player2 is None:
                     player1_id = await sync_to_async(lambda: match.player1.player_id)()
                     return 206, {
                         "match_id": match.id,
@@ -99,7 +100,7 @@ async def match_making(request, data: MatchMakingIn):
             await match.asave()
             return 206, {
                 "match_id": match.id,
-                "player1_id": match.player1.id,
+                "player1_id": match.player1.player_id,
                 "player1_name": match.player1.name,
                 "player1_avatar_no": match.player1.avatar_no
             }
