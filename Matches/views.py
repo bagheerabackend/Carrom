@@ -26,15 +26,35 @@ async def match_making(request, data: MatchMakingIn):
             if await Matches.objects.filter(game=game, status="waiting").aexists():
                 match = await Matches.objects.filter(game=game, status="waiting").afirst()
                 player1 = await sync_to_async(lambda: match.player1)()
-                if player1 == user:
-                    return 405, {"message": "User already joined as player 1"}
+                player2 = await sync_to_async(lambda: match.player2)()
+                player1_id = await sync_to_async(lambda: match.player1.player_id)()
+                if player1 == user and player2 is None:
+                    return 206, {
+                    "match_id": match.id,
+                    "player1_id": player1_id,
+                    "player1_name": match.player1.name,
+                    "player1_avatar_no": match.player1.avatar_no
+                }
                 match.player2 = user
                 match.status = "full"
                 match.winning_amount = game.winning_amount
                 game_fee = await sync_to_async(lambda: match.game.fee)()
                 match.commission_amount = (game_fee * 2) - game.winning_amount
                 await match.asave()
-                player1_id = await sync_to_async(lambda: match.player1.player_id)()
+                if game.type == "bonus":
+                    user.bonus -= game.fee
+                else:
+                    if user.cashback >= game.fee:
+                        user.cashback -= game.fee
+                    else:
+                        if user.cashback > 0:
+                            money = user.cashback
+                            user.cashback = 0
+                            user.coin -= (game.fee - money)
+                        else:
+                            user.coin -= game.fee
+                await sync_to_async(cache.delete)(f"coins_{user.player_id}")
+                await user.asave()
                 player2_id = await sync_to_async(lambda: match.player2.player_id)()
                 return 201, {
                     "match_id": match.id,
