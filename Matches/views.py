@@ -55,6 +55,7 @@ async def match_making(request, data: MatchMakingIn):
                             user.coin -= game.fee
                 await sync_to_async(cache.delete)(f"coins_{user.player_id}")
                 await user.asave()
+                player1_id = await sync_to_async(lambda: match.player1.player_id)()
                 player2_id = await sync_to_async(lambda: match.player2.player_id)()
                 return 201, {
                     "match_id": match.id,
