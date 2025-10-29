@@ -22,19 +22,19 @@ async def match_making(request, data: MatchMakingIn):
         game = await Game.objects.aget(id=data.game_id)
         entry_amount = user.bonus if game.type == "bonus" else (user.coin + user.cashback)
 
-        if (entry_amount) >= game.fee:
-            if await Matches.objects.filter(game=game, status="waiting").aexists():
-                match = await Matches.objects.filter(game=game, status="waiting").afirst()
-                player1 = await sync_to_async(lambda: match.player1)()
-                player2 = await sync_to_async(lambda: match.player2)()
-                if player1 == user and player2 is None:
-                    player1_id = await sync_to_async(lambda: match.player1.player_id)()
-                    return 206, {
-                        "match_id": match.id,
-                        "player1_id": player1_id,
-                        "player1_name": match.player1.name,
-                        "player1_avatar_no": match.player1.avatar_no
-                    }
+        if await Matches.objects.filter(game=game, status="waiting").aexists():
+            match = await Matches.objects.filter(game=game, status="waiting").afirst()
+            player1 = await sync_to_async(lambda: match.player1)()
+            player2 = await sync_to_async(lambda: match.player2)()
+            if player1 == user and player2 is None:
+                player1_id = await sync_to_async(lambda: match.player1.player_id)()
+                return 206, {
+                    "match_id": match.id,
+                    "player1_id": player1_id,
+                    "player1_name": match.player1.name,
+                    "player1_avatar_no": match.player1.avatar_no
+                }
+            if (entry_amount) >= game.fee:
                 match.player2 = user
                 match.status = "full"
                 match.winning_amount = game.winning_amount
@@ -67,45 +67,45 @@ async def match_making(request, data: MatchMakingIn):
                     "player2_avatar_no": match.player2.avatar_no,
                     "winning_amount": match.winning_amount
                 }
-            q = Q(game=game, status="full")
-            q &= (Q(player1=user) | Q(player2=user))
-            if await Matches.objects.filter(q).aexists():
-                match = await Matches.objects.filter(q).afirst()
-                player1_id = await sync_to_async(lambda: match.player1.player_id)()
-                player2_id = await sync_to_async(lambda: match.player2.player_id)()
-                return 201, {
-                    "match_id": match.id,
-                    "player1_id": player1_id,
-                    "player1_name": match.player1.name,
-                    "player1_avatar_no": match.player1.avatar_no,
-                    "player2_id": player2_id,
-                    "player2_name": match.player2.name,
-                    "player2_avatar_no": match.player2.avatar_no,
-                    "winning_amount": match.winning_amount
-                }
-            if game.type == "bonus":
-                user.bonus -= game.fee
-            else:
-                if user.cashback >= game.fee:
-                    user.cashback -= game.fee
-                else:
-                    if user.cashback > 0:
-                        money = user.cashback
-                        user.cashback = 0
-                        user.coin -= (game.fee - money)
-                    else:
-                        user.coin -= game.fee
-            await sync_to_async(cache.delete)(f"coins_{user.player_id}")
-            await user.asave()
-            match = Matches(game=game, player1=user)
-            await match.asave()
-            return 206, {
+            return 402, {"message": "Insufficient coins"}
+        q = Q(game=game, status="full")
+        q &= (Q(player1=user) | Q(player2=user))
+        if await Matches.objects.filter(q).aexists():
+            match = await Matches.objects.filter(q).afirst()
+            player1_id = await sync_to_async(lambda: match.player1.player_id)()
+            player2_id = await sync_to_async(lambda: match.player2.player_id)()
+            return 201, {
                 "match_id": match.id,
-                "player1_id": match.player1.player_id,
+                "player1_id": player1_id,
                 "player1_name": match.player1.name,
-                "player1_avatar_no": match.player1.avatar_no
+                "player1_avatar_no": match.player1.avatar_no,
+                "player2_id": player2_id,
+                "player2_name": match.player2.name,
+                "player2_avatar_no": match.player2.avatar_no,
+                "winning_amount": match.winning_amount
             }
-        return 402, {"message": "Insufficient coins"}
+        if game.type == "bonus":
+            user.bonus -= game.fee
+        else:
+            if user.cashback >= game.fee:
+                user.cashback -= game.fee
+            else:
+                if user.cashback > 0:
+                    money = user.cashback
+                    user.cashback = 0
+                    user.coin -= (game.fee - money)
+                else:
+                    user.coin -= game.fee
+        await sync_to_async(cache.delete)(f"coins_{user.player_id}")
+        await user.asave()
+        match = Matches(game=game, player1=user)
+        await match.asave()
+        return 206, {
+            "match_id": match.id,
+            "player1_id": match.player1.player_id,
+            "player1_name": match.player1.name,
+            "player1_avatar_no": match.player1.avatar_no
+        }
     return 404, {"message": "Game does not exist"}
 
 @match_api.get("/cancel-match", response={200: Message, 404: Message, 409: Message})
