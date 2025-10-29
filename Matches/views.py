@@ -84,28 +84,30 @@ async def match_making(request, data: MatchMakingIn):
                 "player2_avatar_no": match.player2.avatar_no,
                 "winning_amount": match.winning_amount
             }
-        if game.type == "bonus":
-            user.bonus -= game.fee
-        else:
-            if user.cashback >= game.fee:
-                user.cashback -= game.fee
+        if (entry_amount) >= game.fee:
+            if game.type == "bonus":
+                user.bonus -= game.fee
             else:
-                if user.cashback > 0:
-                    money = user.cashback
-                    user.cashback = 0
-                    user.coin -= (game.fee - money)
+                if user.cashback >= game.fee:
+                    user.cashback -= game.fee
                 else:
-                    user.coin -= game.fee
-        await sync_to_async(cache.delete)(f"coins_{user.player_id}")
-        await user.asave()
-        match = Matches(game=game, player1=user)
-        await match.asave()
-        return 206, {
-            "match_id": match.id,
-            "player1_id": match.player1.player_id,
-            "player1_name": match.player1.name,
-            "player1_avatar_no": match.player1.avatar_no
-        }
+                    if user.cashback > 0:
+                        money = user.cashback
+                        user.cashback = 0
+                        user.coin -= (game.fee - money)
+                    else:
+                        user.coin -= game.fee
+            await sync_to_async(cache.delete)(f"coins_{user.player_id}")
+            await user.asave()
+            match = Matches(game=game, player1=user)
+            await match.asave()
+            return 206, {
+                "match_id": match.id,
+                "player1_id": match.player1.player_id,
+                "player1_name": match.player1.name,
+                "player1_avatar_no": match.player1.avatar_no
+            }
+        return 402, {"message": "Insufficient coins"}
     return 404, {"message": "Game does not exist"}
 
 @match_api.get("/cancel-match", response={200: Message, 404: Message, 409: Message})
