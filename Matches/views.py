@@ -119,10 +119,7 @@ async def cancel_match(request, match_id: int):
         if game.type == "bonus":
             user.bonus += game.fee
         else:
-            if user.cashback >= 0:
-                user.cashback += game.fee
-            else:
-                user.coin += game.fee
+            user.coin += game.fee
         await sync_to_async(cache.delete)(f"coins_{user.player_id}")
         await user.asave()
         await match.adelete()
@@ -130,6 +127,30 @@ async def cancel_match(request, match_id: int):
             return 409, {"message": "Player blocked"}
         return 200, {"message": "Match cancelled successfully"}
     return 404, {"message": "Match does not exist or cannot be cancelled"}
+
+@match_api.get("/delete-match", response={200: Message, 404: Message, 409: Message})
+async def delete_match(request, match_id: int):
+    user = request.auth
+    if await Matches.objects.filter(id=match_id).aexists():
+        match = await Matches.objects.select_related('player1', 'player2', 'game').aget(id=match_id)
+        player1 = match.player1
+        player2 = match.player2
+        game_fee = match.game.fee
+        if match.game.type == "bonus":
+            player1.bonus += game_fee
+            player2.bonus += game_fee
+        else:
+            player1.coin += game_fee
+            player2.coin += game_fee
+        await player1.asave()
+        await player2.asave()
+        await sync_to_async(cache.delete)(f"coins_{player1.player_id}")
+        await sync_to_async(cache.delete)(f"coins_{player2.player_id}")
+        await match.adelete()
+        if user.is_blocked:
+            return 409, {"message": "Player blocked"}
+        return 200, {"message": "Match deleted successfully"}
+    return 404, {"message": "Match does not exist"}
 
 ################################################ Match Connection ################################################
 @match_api.patch("/player-disconnected", response={200: Message, 404: Message})
