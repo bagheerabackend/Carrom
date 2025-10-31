@@ -37,12 +37,12 @@ async def debit_transaction(request, data: TransactionIn):
     user = request.auth
     if user.is_blocked:
         return 409, {"message": "Player blocked"}
-    if data.amount > 0:
+    if data.amount <= 0:
         return 405, {"message": "Amount must be greater than zero"}
 
     settings = await AppSettings.objects.alast()
     today = timezone.now()
-    if not TransactionLog.objects.filter(user=user, transaction_at__date=today).count < settings.daily_withdraw_count:
+    if not await TransactionLog.objects.filter(user=user, transaction_at__date=today).acount < settings.daily_withdraw_count:
         return 403, {"message": "Daily Transaction Limit Completed"}
     if data.amount < settings.withdrawal_limit:
         return 406, {"message": f"Minimum amount of {settings.withdrawal_limit} required for withdrawal"}
