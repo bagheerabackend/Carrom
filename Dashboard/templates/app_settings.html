@@ -268,10 +268,9 @@
     $(document).ready(function () {
         const config = {
             addUrl: '{% url "add_settings" %}',
-            editUrl: '{% url "edit_settings" %}',
             csrfToken: '{{ csrf_token }}',
             currentSettingId: null,
-            isEditMode: {% if not add %}true{% else %}false{% endif %}
+            isEditMode: false
         };
 
         init();
@@ -281,6 +280,10 @@
         }
 
         function setupEventListeners() {
+            $('#editSettingsBtn').on('click', function () {
+                config.isEditMode = true;
+            })
+
             // Modal form submission
             $('#settingsForm').on('submit', function (e) {
                 e.preventDefault();
@@ -303,11 +306,6 @@
         function submitSettingsForm() {
             const formData = new FormData($('#settingsForm')[0]);
             let url = config.addUrl;
-            
-            // If editing, use edit URL with ID
-            if (config.isEditMode && config.currentSettingId) {
-                url = `${config.editUrl}${config.currentSettingId}/`;
-            }
             
             $.ajax({
                 url: url,

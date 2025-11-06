@@ -495,34 +495,10 @@ def app_settings_view(request):
 @login_required(login_url='admin_login')
 @require_http_methods(["POST"])
 def add_setting(request):
-    version = request.POST.get('version')
-    maintenance_mode = True if request.POST.get('maintenance_mode') == 'true' else False
-    maintenance_message = request.POST.get('maintenance_message')
-    gst_percentage = request.POST.get('gst_percentage')
-    tds_percentage = request.POST.get('tds_percentage')
-    bonus_point = request.POST.get('bonus_point')
-    withdrawal_limit = request.POST.get('withdrawal_limit')
-    daily_withdraw_count = request.POST.get('daily_withdraw_count')
-    setting = AppSettings(
-        version = version,
-        maintenance_mode = maintenance_mode,
-        maintenance_message = maintenance_message,
-        gst_percentage = gst_percentage,
-        tds_percentage = tds_percentage,
-        bonus_point = bonus_point,
-        withdrawal_limit = withdrawal_limit,
-        daily_withdraw_count = daily_withdraw_count,
-    )
-    setting.save()
-    return JsonResponse("Success", safe=False)
-
-@login_required(login_url='admin_login')
-@require_http_methods(["POST"])
-def edit_setting(request, id):
-    if AppSettings.objects.filter(id=id).exists():
-        setting = AppSettings.objects.get(id=id)
+    if AppSettings.objects.exists():
+        setting = AppSettings.objects.last()
         setting.version = request.POST.get('version', setting.version)
-        setting.maintenance_mode = request.POST.get('maintenance_mode', setting.maintenance_mode)
+        setting.maintenance_mode = True if request.POST.get('maintenance_mode', setting.maintenance_mode) else False
         setting.maintenance_message = request.POST.get('maintenance_message', setting.maintenance_message)
         setting.gst_percentage = request.POST.get('gst_percentage', setting.gst_percentage)
         setting.tds_percentage = request.POST.get('gst_percentage', setting.tds_percentage)
@@ -531,8 +507,28 @@ def edit_setting(request, id):
         setting.daily_withdraw_count = request.POST.get('daily_withdraw_count', setting.daily_withdraw_count)
         cache.delete("app_settings")
         setting.save()
-        return JsonResponse("Success", safe=False)
-    return JsonResponse({"message": "error"})
+    else:
+        version = request.POST.get('version')
+        maintenance_mode = True if request.POST.get('maintenance_mode') == 'true' else False
+        maintenance_message = request.POST.get('maintenance_message')
+        gst_percentage = request.POST.get('gst_percentage')
+        tds_percentage = request.POST.get('tds_percentage')
+        bonus_point = request.POST.get('bonus_point')
+        withdrawal_limit = request.POST.get('withdrawal_limit')
+        daily_withdraw_count = request.POST.get('daily_withdraw_count')
+        setting = AppSettings(
+            version = version,
+            maintenance_mode = maintenance_mode,
+            maintenance_message = maintenance_message,
+            gst_percentage = gst_percentage,
+            tds_percentage = tds_percentage,
+            bonus_point = bonus_point,
+            withdrawal_limit = withdrawal_limit,
+            daily_withdraw_count = daily_withdraw_count,
+        )
+        cache.delete("app_settings")
+        setting.save()
+    return JsonResponse("Success", safe=False)
 
 @login_required(login_url='admin_login')
 def web_games_view(request):

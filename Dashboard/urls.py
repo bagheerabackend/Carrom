@@ -30,7 +30,6 @@ urlpatterns = [
     path('debit-transfer-data', debit_trans_data, name='debit_transfer_data'),
     path('app-settings', app_settings_view, name='app_settings'),
     path('add-settings', add_setting, name='add_settings'),
-    path('edit-settings', edit_setting, name='edit_settings'),
     path('web-games', web_games_view, name='web_games'),
     path('web-games-data', web_games_data, name='web_games_data'),
     path('add-web-games', add_web_games, name='add_web_games'),
