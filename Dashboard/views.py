@@ -498,7 +498,7 @@ def add_setting(request):
     if AppSettings.objects.exists():
         setting = AppSettings.objects.last()
         setting.version = request.POST.get('version', setting.version)
-        setting.maintenance_mode = True if request.POST.get('maintenance_mode', setting.maintenance_mode) else False
+        setting.maintenance_mode = True if request.POST.get('maintenance_mode') == 'true' else False
         setting.maintenance_message = request.POST.get('maintenance_message', setting.maintenance_message)
         setting.gst_percentage = request.POST.get('gst_percentage', setting.gst_percentage)
         setting.tds_percentage = request.POST.get('gst_percentage', setting.tds_percentage)
