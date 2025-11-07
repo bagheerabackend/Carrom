@@ -37,7 +37,7 @@ async def verify_otp(request, data: OtpVerify):
     if cached_otp != data.otp:
         return 405, {"message": "Invalid OTP"}
     q = Q(email=data.email)
-    if user.phone != "":
+    if data.phone != "":
         q |= Q(phone=data.phone)
     if await Player.objects.filter(q).aexists():
         return 409, {"message": "User with this email or phone already exists"}
