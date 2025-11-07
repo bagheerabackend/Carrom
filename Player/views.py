@@ -36,7 +36,10 @@ async def verify_otp(request, data: OtpVerify):
         return 404, {"message": "OTP expired or not found"}
     if cached_otp != data.otp:
         return 405, {"message": "Invalid OTP"}
-    if await Player.objects.filter(Q(email=data.email) | Q(phone=data.phone)).aexists():
+    q = Q(email=data.email)
+    if user.phone:
+        q |= Q(phone=data.phone)
+    if await Player.objects.filter(q).aexists():
         return 409, {"message": "User with this email or phone already exists"}
     player_id = f"CRM0000001" if await Player.objects.acount() == 0 else f"CRM{(await Player.objects.alast()).id + 1:07d}"
     settings = await AppSettings.objects.alast()
