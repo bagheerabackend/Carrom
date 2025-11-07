@@ -6,8 +6,8 @@ class Player(AbstractUser):
     last_name = None
     player_id = models.TextField()
     name = models.CharField(max_length=50)
-    age = models.IntegerField()
-    phone = models.CharField(max_length=10, unique=True)
+    age = models.IntegerField(default=0)
+    phone = models.CharField(max_length=10, default="")
     bonus = models.IntegerField(default=0)
     cashback = models.FloatField(default=0.0)
     coin = models.IntegerField(default=0)

@@ -9,8 +9,8 @@ class OtpIn(Schema):
 
 class OtpVerify(Schema):
     name: str
-    age: int
-    phone: str
+    age: Optional[int] = 0
+    phone: Optional[str] = ""
     password: str
     email: str
     otp: int
