@@ -6,22 +6,29 @@ class Message(Schema):
 
 class OtpIn(Schema):
     email: str
+    phone: str
 
-class OtpVerify(Schema):
+class Register(Schema):
     name: str
     age: Optional[int] = 0
-    phone: Optional[str] = ""
-    password: str
+    phone: str
+    password: Optional[str] = None
     email: str
     otp: int
 
 class LoginIn(Schema):
-    username: str
-    password: str
+    phone: str
+
+class LoginVerify(Schema):
+    phone: str
+    otp: int
 
 class TokenOut(Schema):
     access: str
     refresh: str
+    name: str
+    phone: str
+    email: str
 
 class RefreshTokenIn(Schema):
     refresh: str
