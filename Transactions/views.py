@@ -71,7 +71,7 @@ async def debit_transaction(request, data: TransactionIn):
     # return 404, {"message": "Aadhar not verified"}
 
 @transaction_api.get("/balance-check", response={200: BalanceReponse, 404: Message, 409: Message})
-async def balance_check(request, coin: int):
+async def balance_check(request):
     user = request.auth
     if user.is_blocked:
         return 409, {"message": "Player blocked"}
