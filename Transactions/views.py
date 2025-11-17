@@ -19,12 +19,18 @@ async def credit_transaction(request, data: TransactionIn):
         ########### GST Calculation ###########
         ########### Razorpay Integration ###########
 
+        settings = await AppSettings.objects.alast()
+        tds_percentage = settings.gst_percentage / 100
+        gst_deduct = data.amount * tds_percentage
+        balance_after = data.amount - gst_deduct
         user.coin += data.amount
+        user.cashback += gst_deduct
+        user.withdrawable_coin += balance_after
         await user.asave()
         transaction = TransactionLog(
             user=user,
             amount=data.amount,
-            gst_deduct=0.0,
+            gst_deduct=gst_deduct,
             balance_after=user.coin,
             transaction_type='credit'
         )
