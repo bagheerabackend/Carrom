@@ -71,17 +71,18 @@ async def debit_transaction(request, data: TransactionIn):
     # return 404, {"message": "Aadhar not verified"}
 
 @transaction_api.get("/balance-check", response={200: BalanceReponse, 404: Message, 409: Message})
-async def balance_check(request):
+async def balance_check(request, coin: int):
     user = request.auth
     if user.is_blocked:
         return 409, {"message": "Player blocked"}
     withdrawal_amount = user.withdrawable_coin
+    if withdrawal_amount < coin:
+        return 404, {"message": "Insufficient withdrawable balance"}
     settings = await AppSettings.objects.alast()
     tds_percentage = settings.tds_percentage / 100
-    player_withdrawal = withdrawal_amount - (withdrawal_amount * tds_percentage)
+    player_withdrawal = coin - (coin * tds_percentage)
     return 200, {
         "total_balance": user.coin,
         "withdrawal_amount": withdrawal_amount,
         "player_withdrawal": player_withdrawal,
     }
-    return 404, {"message": "Insufficient balance"}
