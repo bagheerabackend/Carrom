@@ -42,37 +42,46 @@ async def debit_transaction(request, data: TransactionIn):
 
     settings = await AppSettings.objects.alast()
     today = timezone.now()
-    if not await TransactionLog.objects.filter(user=user, transaction_at__date=today).acount < settings.daily_withdraw_count:
-        return 403, {"message": "Daily Transaction Limit Completed"}
-    if data.amount < settings.withdrawal_limit:
-        return 406, {"message": f"Minimum amount of {settings.withdrawal_limit} required for withdrawal"}
+    # if not await TransactionLog.objects.filter(user=user, transaction_at__date=today).acount() < settings.daily_withdraw_count:
+    #     return 403, {"message": "Daily Transaction Limit Completed"}
+    # if data.amount < settings.withdrawal_limit:
+    #     return 406, {"message": f"Minimum amount of {settings.withdrawal_limit} required for withdrawal"}
 
-    if user.pan_no:
-        if user.coin >= data.amount:
+    # if user.pan_no:
+    if user.withdrawable_coin >= data.amount:
 
-            ########### TDS Calculation ###########
-            ########### Razorpay Integration ###########
+        ########### TDS Calculation ###########
+        ########### Razorpay Integration ###########
 
-            user.coin -= data.amount
-            user.withdrawable_coin = 0
-            await user.asave()
-            transaction = TransactionLog(
-                user=user,
-                amount=data.amount,
-                gst_deduct=0.0,
-                balance_after=user.coin,
-                transaction_type='debit'
-            )
-            await transaction.asave()
-            return 200, {"message": "Transaction successful"}
-        return 405, {"message": "Insufficient balance"}
-    return 404, {"message": "Aadhar not verified"}
+        user.coin -= data.amount
+        user.withdrawable_coin -= data.amount
+        await user.asave()
+        tds_percentage = settings.tds_percentage / 100
+        gst_deduct = data.amount - (data.amount * tds_percentage)
+        transaction = TransactionLog(
+            user=user,
+            amount=data.amount,
+            gst_deduct=gst_deduct,
+            balance_after=user.coin,
+            transaction_type='debit'
+        )
+        await transaction.asave()
+        return 200, {"message": "Transaction successful"}
+    return 405, {"message": "Insufficient balance"}
+    # return 404, {"message": "Aadhar not verified"}
 
-@transaction_api.get("/balance-check", response={200: Message, 404: Message, 409: Message})
+@transaction_api.get("/balance-check", response={200: BalanceReponse, 404: Message, 409: Message})
 async def balance_check(request, coin: int):
     user = request.auth
     if user.is_blocked:
         return 409, {"message": "Player blocked"}
-    if user.coin >= coin:
-        return 200, {"message": "Sufficient balance"}
+    withdrawal_amount = user.withdrawable_coin
+    settings = await AppSettings.objects.alast()
+    tds_percentage = settings.tds_percentage / 100
+    player_withdrawal = withdrawal_amount - (withdrawal_amount * tds_percentage)
+    return 200, {
+        "total_balance": user.coin,
+        "withdrawal_amount": withdrawal_amount,
+        "player_withdrawal": player_withdrawal,
+    }
     return 404, {"message": "Insufficient balance"}
