@@ -12,6 +12,7 @@ class Player(AbstractUser):
     cashback = models.FloatField(default=0.0)
     coin = models.IntegerField(default=0)
     withdrawable_coin = models.IntegerField(default=0)
+    game_coin_used = models.IntegerField(default=0)
     # aadhar_no = models.CharField(max_length=12, unique=True, null=True, blank=True)
     # aadhar_verified = models.BooleanField(default=False)
     pan_no = models.CharField(max_length=10, unique=True, null=True, blank=True)
