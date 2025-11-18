@@ -52,11 +52,9 @@ async def match_making(request, data: MatchMakingIn):
                             user.cashback = 0
                             user.coin -= (game.fee - money)
                             user.withdrawable_coin -= (game.fee - money)
-                            user.game_coin_used += (game.fee - money)
                         else:
                             user.coin -= game.fee
                             user.withdrawable_coin -= game.fee
-                            user.game_coin_used += game.fee
                 await sync_to_async(cache.delete)(f"coins_{user.player_id}")
                 await user.asave()
                 player1_id = await sync_to_async(lambda: match.player1.player_id)()
@@ -99,12 +97,10 @@ async def match_making(request, data: MatchMakingIn):
                         money = user.cashback
                         user.cashback = 0
                         user.coin -= (game.fee - money)
-                        user.withdrawable_coin -= (game.fee - money)
-                        user.game_coin_used += (game.fee - money)
+                        # user.withdrawable_coin -= (game.fee - money)
                     else:
                         user.coin -= game.fee
-                        user.withdrawable_coin -= game.fee
-                        user.game_coin_used += game.fee
+                        # user.withdrawable_coin -= game.fee
             await sync_to_async(cache.delete)(f"coins_{user.player_id}")
             await user.asave()
             match = Matches(game=game, player1=user)
@@ -128,8 +124,6 @@ async def cancel_match(request, match_id: int):
             user.bonus += game.fee
         else:
             user.coin += game.fee
-            user.withdrawable_coin += game.fee
-            user.game_coin_used -= game.fee
         await sync_to_async(cache.delete)(f"coins_{user.player_id}")
         await user.asave()
         await match.adelete()
@@ -152,10 +146,6 @@ async def delete_match(request, match_id: int):
         else:
             player1.coin += game_fee
             player2.coin += game_fee
-            player1.withdrawable_coin += game_fee
-            player2.withdrawable_coin += game_fee
-            player1.game_coin_used -= game_fee
-            player2.game_coin_used -= game_fee
         await player1.asave()
         await player2.asave()
         await sync_to_async(cache.delete)(f"coins_{player1.player_id}")
@@ -219,10 +209,9 @@ async def match_result(request, data: MatchResultIn):
                 if game_type == "bonus":
                     winner.bonus += match.winning_amount
                 else:
-                    winner.withdrawable_coin += match.winning_amount - winner.play_coin_used
+                    winner.withdrawable_coin += (match.winning_amount - match.game.fee)
                     winner.coin += match.winning_amount
                 await sync_to_async(cache.delete)(f"coins_{winner.player_id}")
-                winner.play_coin_used = 0
                 await winner.asave()
                 match.winner = winner
                 winner_id = await sync_to_async(lambda: winner.player_id)()
