@@ -47,6 +47,8 @@ class PlayerOut(Schema):
     total_games: int
     total_wons: int
     total_loss: int
+    email: str
+    phone: str
 
 class UserPatch(Schema):
     name: Optional[str]

@@ -210,7 +210,9 @@ async def get_profile(request):
         avatar_no=user.avatar_no,
         total_games=total_count,
         total_wons=winning_count,
-        total_loss=losing_count
+        total_loss=losing_count,
+        email=user.email,
+        phone=user.phone,
     )
     await sync_to_async(cache.set)(cache_key, profile_data, 300)
     return 200, profile_data
