@@ -212,8 +212,8 @@ async def match_result(request, data: MatchResultIn):
                 if game_type == "bonus":
                     winner.bonus += match.winning_amount
                 else:
-                    winner.withdrawable_coin += (match.winning_amount - match.game.fee)
                     winner.coin += match.winning_amount
+                    winner.withdrawable_coin = winner.coin - winner.cashback
                 await sync_to_async(cache.delete)(f"coins_{winner.player_id}")
                 await winner.asave()
                 match.winner = winner
