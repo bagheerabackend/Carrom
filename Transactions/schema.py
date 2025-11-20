@@ -3,7 +3,7 @@ from typing import *
 
 class TransactionIn(Schema):
     amount: int
-    order_id: Optional[str] = None
+    order_id: str
     status: Optional[str] = 'pending'
 
 class BalanceReponse(Schema):
