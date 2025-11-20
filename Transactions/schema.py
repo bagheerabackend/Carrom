@@ -13,6 +13,6 @@ class BalanceReponse(Schema):
 
 class TransactionHistory(Schema):
     transaction_id: int
-    amount: str
+    amount: int
     order_id: str
     status: str
