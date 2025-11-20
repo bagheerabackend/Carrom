@@ -111,7 +111,7 @@ async def transaction_history(request, transaction_type: str = 'credit'):
     if user.is_blocked:
         return 409, {"message": "Player blocked"}
     transaction_list = []
-    async for transaction in TransactionLog.objects.filter(user=user).order_by('-id'):
+    async for transaction in TransactionLog.objects.filter(user=user, transaction_type=transaction_type).order_by('-id'):
         transaction_list.append({
             'transaction_id': transaction.id,
             'amount': transaction.amount,
