@@ -261,3 +261,21 @@ async def update_bonus(request, bonus: float):
             return 200, {"message": "Bonus updated successfully"}
         return 404, {"message": "Invalid bonus amount"}
     return 405, {"message": "No bonus to update"}
+
+################################################ Match History ################################################
+@match_api.get("/match-history", response={200: List[MatchHistoryOut], 409: Message})
+async def match_history(request):
+    user = request.auth
+    if user.is_blocked:
+        return 409, {"message": "Player blocked"}
+    matches_list = []
+    async for match in Matches.objects.filter(Q(player1=user) | Q(player2=user)).select_related('game', 'winner').order_by('-id'):
+        matches_list.append({
+            'match_id': match.id,
+            'game_name': match.game.name,
+            'game_type': match.game.type,
+            'fee': match.game.fee,
+            'match_status': 'won' if match.winner == user else 'lose',
+            'winning_amount': match.winning_amount
+        })
+    return 200, matches_list

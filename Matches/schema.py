@@ -34,3 +34,11 @@ class MatchResultOut(Schema):
     player2_avatar_no: int
     winner_id: str
     winning_amount: float
+
+class MatchHistoryOut(Schema):
+    match_id: int
+    game_name: str
+    game_type: str
+    fee: int
+    match_status: str
+    winning_amount: int

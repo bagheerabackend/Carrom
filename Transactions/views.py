@@ -20,19 +20,23 @@ async def credit_transaction(request, data: TransactionIn):
         ########### Razorpay Integration ###########
 
         settings = await AppSettings.objects.alast()
-        tds_percentage = settings.gst_percentage / 100
-        gst_deduct = data.amount * tds_percentage
-        balance_after = data.amount - gst_deduct
-        user.coin += data.amount
-        user.cashback += gst_deduct
-        user.withdrawable_coin += balance_after
-        await user.asave()
+        gst_deduct = 0
+        if data.status == 'success':
+            tds_percentage = settings.gst_percentage / 100
+            gst_deduct = data.amount * tds_percentage
+            balance_after = data.amount - gst_deduct
+            user.coin += data.amount
+            user.cashback += gst_deduct
+            user.withdrawable_coin += balance_after
+            await user.asave()
         transaction = TransactionLog(
             user=user,
             amount=data.amount,
             gst_deduct=gst_deduct,
             balance_after=user.coin,
-            transaction_type='credit'
+            transaction_type='credit',
+            order_id=data.order_id,
+            status=data.status
         )
         await transaction.asave()
         return 200, {"message": "Transaction successful"}
@@ -59,17 +63,21 @@ async def debit_transaction(request, data: TransactionIn):
         ########### TDS Calculation ###########
         ########### Razorpay Integration ###########
 
-        user.coin -= data.amount
-        user.withdrawable_coin -= data.amount
-        await user.asave()
-        tds_percentage = settings.tds_percentage / 100
-        gst_deduct = data.amount - (data.amount * tds_percentage)
+        gst_deduct = 0
+        if data.status == 'success':
+            user.coin -= data.amount
+            user.withdrawable_coin -= data.amount
+            await user.asave()
+            tds_percentage = settings.tds_percentage / 100
+            gst_deduct = data.amount - (data.amount * tds_percentage)
         transaction = TransactionLog(
             user=user,
             amount=data.amount,
             gst_deduct=gst_deduct,
             balance_after=user.coin,
-            transaction_type='debit'
+            transaction_type='debit',
+            order_id=data.order_id,
+            status=data.status
         )
         await transaction.asave()
         return 200, {"message": "Transaction successful"}
@@ -96,3 +104,18 @@ async def balance_check(request, coin: int):
         "withdrawal_amount": withdrawal_amount,
         "player_withdrawal": player_withdrawal,
     }
+
+@transaction_api.get("/transaction-history", response={200: List[TransactionHistoryOut], 409: Message})
+async def transaction_history(request, transaction_type: str = 'credit'):
+    user = request.auth
+    if user.is_blocked:
+        return 409, {"message": "Player blocked"}
+    transaction_list = []
+    async for transaction in TransactionLog.objects.filter(user=user, transaction_type=transaction_type).order_by('-id'):
+        transaction_list.append({
+            'transaction_id': transaction.id,
+            'amount': transaction.amount,
+            'order_id': transaction.order_id,
+            'status': transaction.status
+        })
+    return 200, transaction_list
