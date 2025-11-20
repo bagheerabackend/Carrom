@@ -14,5 +14,5 @@ class BalanceReponse(Schema):
 class TransactionHistoryOut(Schema):
     transaction_id: int
     amount: str
-    order_id: Optional[str] = None
+    order_id: Optional[str] = ''
     status: str
