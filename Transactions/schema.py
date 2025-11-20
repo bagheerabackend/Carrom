@@ -11,7 +11,7 @@ class BalanceReponse(Schema):
     withdrawal_amount: int
     player_withdrawal: int
 
-class TransactionHistoryOut(Schema):
+class TransactionHistory(Schema):
     transaction_id: int
     amount: str
     order_id: Optional[str] = ''

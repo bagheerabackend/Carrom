@@ -105,7 +105,7 @@ async def balance_check(request, coin: int):
         "player_withdrawal": player_withdrawal,
     }
 
-@transaction_api.get("/transaction-history", response={200: List[TransactionHistoryOut], 409: Message})
+@transaction_api.get("/transaction-history", response={200: List[TransactionHistory], 409: Message})
 async def transaction_history(request, transaction_type: str = 'credit'):
     user = request.auth
     if user.is_blocked:
