@@ -21,7 +21,7 @@ async def credit_transaction(request, data: TransactionIn):
 
         settings = await AppSettings.objects.alast()
         gst_deduct = 0
-        if data.status == 'success':
+        if data.status in ['success', 'pending']:
             tds_percentage = settings.gst_percentage / 100
             gst_deduct = data.amount * tds_percentage
             balance_after = data.amount - gst_deduct
