@@ -115,7 +115,7 @@ async def transaction_history(request, transaction_type: str = 'credit'):
         transaction_list.append({
             'transaction_id': transaction.id,
             'amount': transaction.amount,
-            'order_id': transaction.order_id if transaction.order_id else None,
+            'order_id': transaction.order_id if transaction.order_id else '',
             'status': transaction.status
         })
     return 200, transaction_list
