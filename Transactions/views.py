@@ -25,6 +25,14 @@ async def credit_transaction(request, data: TransactionIn):
             if data.status != log.status:
                 log.status = data.status
                 await log.asave()
+                if data.status == 'success':
+                    tds_percentage = settings.gst_percentage / 100
+                    gst_deduct = data.amount * tds_percentage
+                    balance_after = data.amount - gst_deduct
+                    user.coin += data.amount
+                    user.cashback += gst_deduct
+                    user.withdrawable_coin += balance_after
+                    await user.asave()
             return 200, {"message": "Transaction successful"}
         gst_deduct = 0
         if data.status == 'success':
