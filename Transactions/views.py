@@ -20,6 +20,12 @@ async def credit_transaction(request, data: TransactionIn):
         ########### Razorpay Integration ###########
 
         settings = await AppSettings.objects.alast()
+        if await TransactionLog.objects.filter(order_id=data.order_id).aexists():
+            log = await TransactionLog.objects.aget(order_id=data.order_id)
+            if data.status != log.status:
+                log.status = data.status
+                await log.asave()
+            return 200, {"message": "Transaction successful"}
         gst_deduct = 0
         if data.status == 'success':
             tds_percentage = settings.gst_percentage / 100
@@ -62,7 +68,12 @@ async def debit_transaction(request, data: TransactionIn):
 
         ########### TDS Calculation ###########
         ########### Razorpay Integration ###########
-
+        if await TransactionLog.objects.filter(order_id=data.order_id).aexists():
+            log = await TransactionLog.objects.aget(order_id=data.order_id)
+            if data.status != log.status:
+                log.status = data.status
+                await log.asave()
+            return 200, {"message": "Transaction successful"}
         gst_deduct = 0
         if data.status in ['success', 'pending']:
             user.coin -= data.amount
