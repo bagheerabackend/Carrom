@@ -16,6 +16,8 @@ TWILIO_ACCOUNT_SID = config('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN')
 TWILIO_MESSAGING_SERVICE_SID = config('TWILIO_MESSAGING_SERVICE_SID')
 
+BONUS_REFILL_POINT = config('BONUS_REFILL_POINT', default=2000, cast=int)
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
