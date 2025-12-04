@@ -51,7 +51,7 @@ async def match_making(request, data: MatchMakingIn):
                         if user.cashback > 0:
                             money = user.cashback
                             user.cashback = 0
-                            user.coin -= (game.fee - money)
+                            user.coin -= game.fee
                             user.withdrawable_coin -= (game.fee - money)
                         else:
                             user.coin -= game.fee
