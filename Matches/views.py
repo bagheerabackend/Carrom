@@ -133,7 +133,7 @@ async def cancel_match(request, match_id: int):
         else:
             cashback_used = user.cashback_used
             user.cashback += cashback_used
-            user.coin += (game.fee - cashback_used)
+            user.coin += (game.fee + cashback_used)
             user.withdrawable_coin += (game.fee - cashback_used)
             user.cashback_used = 0
         await sync_to_async(cache.delete)(f"coins_{user.player_id}")
@@ -158,12 +158,12 @@ async def delete_match(request, match_id: int):
         else:
             player1_cashback_used = player1.cashback_used
             player1.cashback += player1_cashback_used
-            player1.coin += (game_fee - player1_cashback_used)
+            player1.coin += (game_fee + player1_cashback_used)
             player1.withdrawable_coin += (game_fee - player1_cashback_used)
             player1.cashback_used = 0
             player2_cashback_used = player2.cashback_used
             player2.cashback += player2_cashback_used
-            player2.coin += (game_fee - player2_cashback_used)
+            player2.coin += (game_fee + player2_cashback_used)
             player2.withdrawable_coin += (game_fee - player2_cashback_used)
             player2.cashback_used = 0
         await player1.asave()
