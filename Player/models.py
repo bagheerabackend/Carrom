@@ -10,6 +10,7 @@ class Player(AbstractUser):
     phone = models.CharField(max_length=10, default="")
     bonus = models.IntegerField(default=0)
     cashback = models.FloatField(default=0.0)
+    cashback_used = models.IntegerField(default=0)
     coin = models.IntegerField(default=0)
     withdrawable_coin = models.IntegerField(default=0)
     # aadhar_no = models.CharField(max_length=12, unique=True, null=True, blank=True)
