@@ -219,7 +219,7 @@ async def player_reconnected(request, match_id: int, player_id: int):
 @match_api.patch("/match-result", response={200: MatchResultOut, 404: Message})
 async def match_result(request, data: MatchResultIn):
     if await Matches.objects.filter(id=data.match_id).aexists():
-        match = await Matches.objects.aget(id=data.match_id)
+        match = await Matches.objects.select_related('player1', 'player2', 'game').aget(id=data.match_id)
         player1_id = await sync_to_async(lambda: match.player1.player_id)()
         player2_id = await sync_to_async(lambda: match.player2.player_id)()
         game_type = await sync_to_async(lambda: match.game.type)()
@@ -234,6 +234,10 @@ async def match_result(request, data: MatchResultIn):
                 await sync_to_async(cache.delete)(f"coins_{winner.player_id}")
                 await winner.asave()
                 match.winner = winner
+                match.player1.cashback_used = 0
+                match.player2.cashback_used = 0
+                await match.player1.asave()
+                await match.player2.asave()
                 winner_id = await sync_to_async(lambda: winner.player_id)()
                 match.status = "completed"
                 await match.asave()
