@@ -223,6 +223,7 @@ async def match_result(request, data: MatchResultIn):
         player1_id = await sync_to_async(lambda: match.player1.player_id)()
         player2_id = await sync_to_async(lambda: match.player2.player_id)()
         game_type = await sync_to_async(lambda: match.game.type)()
+        print(f"Processing result for Match ID: {data.match_id}, Winner ID: {data.winner_id}, game_type: {game_type}")
         if not match.status == "completed":
             if player1_id == data.winner_id or player2_id == data.winner_id:
                 winner = await Player.objects.aget(player_id=data.winner_id)
