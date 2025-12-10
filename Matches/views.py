@@ -233,13 +233,16 @@ async def match_result(request, data: MatchResultIn):
                 else:
                     winner.coin += match.winning_amount
                     winner.withdrawable_coin = winner.coin - winner.cashback
+                    winner.cashback_used = 0
                 await sync_to_async(cache.delete)(f"coins_{winner.player_id}")
                 await winner.asave()
+                if winner == match.player1:
+                    match.player2.cashback_used = 0
+                    await match.player2.asave()
+                else:
+                    match.player1.cashback_used = 0
+                    await match.player1.asave()
                 match.winner = winner
-                match.player1.cashback_used = 0
-                match.player2.cashback_used = 0
-                await match.player1.asave()
-                await match.player2.asave()
                 winner_id = await sync_to_async(lambda: winner.player_id)()
                 match.status = "completed"
                 await match.asave()
