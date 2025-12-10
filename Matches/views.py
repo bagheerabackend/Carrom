@@ -228,6 +228,7 @@ async def match_result(request, data: MatchResultIn):
                 winner = await Player.objects.aget(player_id=data.winner_id)
                 if game_type == "bonus":
                     winner.bonus += match.winning_amount
+                    print(f"Bonus Added to {winner.username}: {match.winning_amount}, Total Bonus: {winner.bonus}")
                 else:
                     winner.coin += match.winning_amount
                     winner.withdrawable_coin = winner.coin - winner.cashback
