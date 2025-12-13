@@ -19,14 +19,38 @@ async def credit_transaction(request, data: TransactionIn):
         ########### GST Calculation ###########
         ########### Razorpay Integration ###########
 
-        user.coin += data.amount
-        await user.asave()
+        settings = await AppSettings.objects.alast()
+        if await TransactionLog.objects.filter(order_id=data.order_id).aexists():
+            log = await TransactionLog.objects.aget(order_id=data.order_id)
+            if data.status != log.status:
+                log.status = data.status
+                await log.asave()
+                if data.status == 'success':
+                    tds_percentage = settings.gst_percentage / 100
+                    gst_deduct = data.amount * tds_percentage
+                    balance_after = data.amount - gst_deduct
+                    user.coin += data.amount
+                    user.cashback += gst_deduct
+                    user.withdrawable_coin += balance_after
+                    await user.asave()
+            return 200, {"message": "Transaction successful"}
+        gst_deduct = 0
+        if data.status == 'success':
+            tds_percentage = settings.gst_percentage / 100
+            gst_deduct = data.amount * tds_percentage
+            balance_after = data.amount - gst_deduct
+            user.coin += data.amount
+            user.cashback += gst_deduct
+            user.withdrawable_coin += balance_after
+            await user.asave()
         transaction = TransactionLog(
             user=user,
             amount=data.amount,
-            gst_deduct=0.0,
+            gst_deduct=gst_deduct,
             balance_after=user.coin,
-            transaction_type='credit'
+            transaction_type='credit',
+            order_id=data.order_id,
+            status=data.status
         )
         await transaction.asave()
         return 200, {"message": "Transaction successful"}
@@ -42,37 +66,75 @@ async def debit_transaction(request, data: TransactionIn):
 
     settings = await AppSettings.objects.alast()
     today = timezone.now()
-    if not await TransactionLog.objects.filter(user=user, transaction_at__date=today).acount < settings.daily_withdraw_count:
-        return 403, {"message": "Daily Transaction Limit Completed"}
-    if data.amount < settings.withdrawal_limit:
-        return 406, {"message": f"Minimum amount of {settings.withdrawal_limit} required for withdrawal"}
+    # if not await TransactionLog.objects.filter(user=user, transaction_at__date=today).acount() < settings.daily_withdraw_count:
+    #     return 403, {"message": "Daily Transaction Limit Completed"}
+    # if data.amount < settings.withdrawal_limit:
+    #     return 406, {"message": f"Minimum amount of {settings.withdrawal_limit} required for withdrawal"}
 
-    if user.pan_no:
-        if user.coin >= data.amount:
+    # if user.pan_no:
+    if user.withdrawable_coin >= data.amount:
 
-            ########### TDS Calculation ###########
-            ########### Razorpay Integration ###########
-
-            user.coin -= data.amount
-            user.withdrawable_coin = 0
-            await user.asave()
-            transaction = TransactionLog(
-                user=user,
-                amount=data.amount,
-                gst_deduct=0.0,
-                balance_after=user.coin,
-                transaction_type='debit'
-            )
-            await transaction.asave()
+        ########### TDS Calculation ###########
+        ########### Razorpay Integration ###########
+        if await TransactionLog.objects.filter(order_id=data.order_id).aexists():
+            log = await TransactionLog.objects.aget(order_id=data.order_id)
+            if data.status != log.status:
+                log.status = data.status
+                await log.asave()
             return 200, {"message": "Transaction successful"}
-        return 405, {"message": "Insufficient balance"}
-    return 404, {"message": "Aadhar not verified"}
+        gst_deduct = 0
+        if data.status in ['success', 'pending']:
+            user.coin -= data.amount
+            user.withdrawable_coin -= data.amount
+            await user.asave()
+            tds_percentage = settings.tds_percentage / 100
+            gst_deduct = data.amount - (data.amount * tds_percentage)
+        transaction = TransactionLog(
+            user=user,
+            amount=data.amount,
+            gst_deduct=gst_deduct,
+            balance_after=user.coin,
+            transaction_type='debit',
+            order_id=data.order_id,
+            status=data.status
+        )
+        await transaction.asave()
+        return 200, {"message": "Transaction successful"}
+    return 405, {"message": "Insufficient balance"}
+    # return 404, {"message": "Aadhar not verified"}
 
-@transaction_api.get("/balance-check", response={200: Message, 404: Message, 409: Message})
+@transaction_api.get("/balance-check", response={200: BalanceReponse, 404: BalanceReponse, 409: Message})
 async def balance_check(request, coin: int):
     user = request.auth
     if user.is_blocked:
         return 409, {"message": "Player blocked"}
-    if user.coin >= coin:
-        return 200, {"message": "Sufficient balance"}
-    return 404, {"message": "Insufficient balance"}
+    withdrawal_amount = user.withdrawable_coin
+    settings = await AppSettings.objects.alast()
+    tds_percentage = settings.tds_percentage / 100
+    if withdrawal_amount < coin:
+        return 404, {
+            "total_balance": user.coin,
+            "withdrawal_amount": withdrawal_amount,
+            "player_withdrawal": 0,
+        }
+    player_withdrawal = coin - (coin * tds_percentage)
+    return 200, {
+        "total_balance": user.coin,
+        "withdrawal_amount": withdrawal_amount,
+        "player_withdrawal": player_withdrawal,
+    }
+
+@transaction_api.get("/transaction-history", response={200: List[TransactionHistory], 409: Message})
+async def transaction_history(request, transaction_type: str = 'credit'):
+    user = request.auth
+    if user.is_blocked:
+        return 409, {"message": "Player blocked"}
+    transaction_list = []
+    async for transaction in TransactionLog.objects.filter(user=user, transaction_type=transaction_type).order_by('-id'):
+        transaction_list.append({
+            'transaction_id': transaction.id,
+            'amount': transaction.amount,
+            'order_id': transaction.order_id if transaction.order_id else '',
+            'status': transaction.status
+        })
+    return 200, transaction_list

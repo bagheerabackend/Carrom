@@ -3,6 +3,7 @@ from .schema import *
 from typing import *
 from .models import *
 from .utils.verify_mail import send_otp_to_email
+from BagheeraCarrom.utils.twilio import send_otp_via_twilio
 from ninja_jwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.db.models import Q
@@ -17,21 +18,24 @@ from Settings.models import AppSettings
 user_api = Router(tags=["User"])
 
 ################################################ Register User ################################################
-@user_api.post("/send-otp", auth=None, response={200: Message, 404: Message})
-async def send_otp(request, data: OtpIn):
-    if await Player.objects.filter(email=data.email).aexists():
-        return 404, {"message": "Email already exists"}
-    if await sync_to_async(cache.get)(data.email):
-        await sync_to_async(cache.delete)(data.email)
+@user_api.post("/send-register-otp", auth=None, response={200: Message, 404: Message, 405: Message})
+async def send_register_otp(request, data: OtpIn):
+    if await Player.objects.filter(Q(email=data.email) | Q(phone=data.phone)).aexists():
+        return 404, {"message": "User with this email or phone already exists"}
+    if await sync_to_async(cache.get)(f"register-{data.phone}"):
+        await sync_to_async(cache.delete)(f"register-{data.phone}")
     otp = random.randint(1000, 9999)
     print(otp)
-    await sync_to_async(cache.set)(data.email, otp, timeout=60)
-    await send_otp_to_email(data.email, otp)
-    return 200, {"message": "OTP sent to email"}
+    await sync_to_async(cache.set)(f"register-{data.phone}", otp, timeout=60)
+    status = await send_otp_via_twilio(data.phone, otp)
+    if status:
+        return 200, {"message": "OTP sent to mobile number"}
+    await sync_to_async(cache.delete)(f"register-{data.phone}")
+    return 405, {"message": "Error sending OTP"}
 
-@user_api.post("/verify-otp", auth=None, response={201: TokenOut, 404: Message, 405: Message, 409: Message})
-async def verify_otp(request, data: OtpVerify):
-    cached_otp = await sync_to_async(cache.get)(data.email)
+@user_api.post("/register", auth=None, response={201: TokenOut, 404: Message, 405: Message, 409: Message})
+async def register(request, data: Register):
+    cached_otp = await sync_to_async(cache.get)(f"register-{data.phone}")
     if cached_otp is None:
         return 404, {"message": "OTP expired or not found"}
     if cached_otp != data.otp:
@@ -43,33 +47,114 @@ async def verify_otp(request, data: OtpVerify):
     user = Player(
         player_id=player_id,
         name=data.name,
-        username=data.email,
+        username=data.phone,
         email=data.email,
         phone=data.phone,
         age=data.age,
-        avatar_no=random.randint(1, 10),
+        avatar_no=random.randint(0, 9),
         bonus = settings.bonus_point
     )
     user.set_password(data.password)
     await user.asave()
     refresh = str(RefreshToken.for_user(user))
     access = str(AccessToken.for_user(user))
-    await sync_to_async(cache.delete)(data.email)
-    return 201, {"access": access, "refresh": refresh}
+    await sync_to_async(cache.delete)(f"register-{data.phone}")
+    return 201, {"access": access, "refresh": refresh, "name": user.name, "phone": user.phone, "email": user.email}
 
-################################################ Login User ################################################
-@user_api.post("/login", auth=None, response={200: TokenOut, 405: Message, 409: Message})
-async def login(request, data: LoginIn):
-    if not await Player.objects.filter(username=data.username).aexists():
-        return 405, {"message": "Invalid credentials"}
-    user = await Player.objects.aget(username=data.username)
-    if not check_password(data.password, user.password):
-        return 405, {"message": "Invalid credentials"}
+@user_api.post("/send-login-otp", auth=None, response={200: Message, 404: Message, 405: Message})
+async def send_login_otp(request, data: LoginIn):
+    if not await Player.objects.filter(phone=data.phone).aexists():
+        return 404, {"message": "User do not exist"}
+    if await sync_to_async(cache.get)(f"login-{data.phone}"):
+        await sync_to_async(cache.delete)(f"login-{data.phone}")
+    otp = random.randint(1000, 9999)
+    print(otp)
+    if data.phone in ["1111111111", "1111111112"]:
+        otp = 1111
+        await sync_to_async(cache.set)(f"login-{data.phone}", otp, timeout=300)
+        return 200, {"message": "OTP sent to test mobile number"}
+    await sync_to_async(cache.set)(f"login-{data.phone}", otp, timeout=60)
+    status = await send_otp_via_twilio(data.phone, otp)
+    if status:
+        return 200, {"message": "OTP sent to mobile number"}
+    await sync_to_async(cache.delete)(f"login-{data.phone}")
+    return 405, {"message": "Error sending OTP"}
+
+@user_api.post("/login", auth=None, response={200: TokenOut, 404: Message, 405: Message, 406: Message, 409: Message})
+async def login(request, data: LoginVerify):
+    if not await Player.objects.filter(phone=data.phone).aexists():
+        return 406, {"message": "User do not exist"}
+    cached_otp = await sync_to_async(cache.get)(f"login-{data.phone}")
+    if cached_otp is None:
+        return 404, {"message": "OTP expired or not found"}
+    if cached_otp != data.otp:
+        return 405, {"message": "Invalid OTP"}
+    user = await Player.objects.aget(phone=data.phone)
     if user.is_blocked:
         return 409, {"message": "Player blocked"}
     refresh = str(RefreshToken.for_user(user))
     access = str(AccessToken.for_user(user))
-    return 200, {"access": access, "refresh": refresh}
+    await sync_to_async(cache.delete)(f"login-{data.phone}")
+    return 200, {"access": access, "refresh": refresh, "name": user.name, "phone": user.phone, "email": user.email}
+
+# @user_api.post("/send-otp", auth=None, response={200: Message, 404: Message, 405: Message})
+# async def send_otp(request, data: OtpIn):
+#     if await Player.objects.filter(phone=data.mobile).aexists():
+#         return 404, {"message": "Credentials already exists"}
+#     if await sync_to_async(cache.get)(data.mobile):
+#         await sync_to_async(cache.delete)(data.mobile)
+#     otp = random.randint(1000, 9999)
+#     print(otp)
+#     await sync_to_async(cache.set)(data.mobile, otp, timeout=60)
+#     status = await send_otp_via_twilio(data.mobile, otp)
+#     if status:
+#         return 200, {"message": "OTP sent to mobile number"}
+#     return 405, {"message": "Error sending OTP"}
+
+# @user_api.post("/verify-otp", auth=None, response={201: TokenOut, 404: Message, 405: Message, 409: Message})
+# async def verify_otp(request, data: OtpVerify):
+#     cached_otp = await sync_to_async(cache.get)(data.email)
+#     if cached_otp is None:
+#         return 404, {"message": "OTP expired or not found"}
+#     if cached_otp != data.otp:
+#         return 405, {"message": "Invalid OTP"}
+#     q = Q(email=data.email)
+#     if data.phone != "":
+#         q |= Q(phone=data.phone)
+#     if await Player.objects.filter(q).aexists():
+#         return 409, {"message": "User with this email or phone already exists"}
+#     player_id = f"CRM0000001" if await Player.objects.acount() == 0 else f"CRM{(await Player.objects.alast()).id + 1:07d}"
+#     settings = await AppSettings.objects.alast()
+#     user = Player(
+#         player_id=player_id,
+#         name=data.name,
+#         username=data.email,
+#         email=data.email,
+#         phone=data.phone,
+#         age=data.age,
+#         avatar_no=random.randint(0, 9),
+#         bonus = settings.bonus_point
+#     )
+#     user.set_password(data.password)
+#     await user.asave()
+#     refresh = str(RefreshToken.for_user(user))
+#     access = str(AccessToken.for_user(user))
+#     await sync_to_async(cache.delete)(data.email)
+#     return 201, {"access": access, "refresh": refresh}
+
+# ################################################ Login User ################################################
+# @user_api.post("/login", auth=None, response={200: TokenOut, 405: Message, 409: Message})
+# async def login(request, data: LoginIn):
+#     if not await Player.objects.filter(username=data.username).aexists():
+#         return 405, {"message": "Invalid credentials"}
+#     user = await Player.objects.aget(username=data.username)
+#     if not check_password(data.password, user.password):
+#         return 405, {"message": "Invalid credentials"}
+#     if user.is_blocked:
+#         return 409, {"message": "Player blocked"}
+#     refresh = str(RefreshToken.for_user(user))
+#     access = str(AccessToken.for_user(user))
+#     return 200, {"access": access, "refresh": refresh}
 
 @user_api.post("/refresh", auth=None, response={200: TokenOut, 405: Message, 409: Message})
 async def refresh_token(request, data: RefreshTokenIn):
@@ -129,7 +214,9 @@ async def get_profile(request):
         avatar_no=user.avatar_no,
         total_games=total_count,
         total_wons=winning_count,
-        total_loss=losing_count
+        total_loss=losing_count,
+        email=user.email,
+        phone=user.phone,
     )
     await sync_to_async(cache.set)(cache_key, profile_data, 300)
     return 200, profile_data

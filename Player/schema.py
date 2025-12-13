@@ -6,22 +6,29 @@ class Message(Schema):
 
 class OtpIn(Schema):
     email: str
-
-class OtpVerify(Schema):
-    name: str
-    age: int
     phone: str
-    password: str
+
+class Register(Schema):
+    name: str
+    age: Optional[int] = 0
+    phone: str
+    password: Optional[str] = None
     email: str
     otp: int
 
 class LoginIn(Schema):
-    username: str
-    password: str
+    phone: str
+
+class LoginVerify(Schema):
+    phone: str
+    otp: int
 
 class TokenOut(Schema):
     access: str
     refresh: str
+    name: str
+    phone: str
+    email: str
 
 class RefreshTokenIn(Schema):
     refresh: str
@@ -40,6 +47,8 @@ class PlayerOut(Schema):
     total_games: int
     total_wons: int
     total_loss: int
+    email: str
+    phone: str
 
 class UserPatch(Schema):
     name: Optional[str]
