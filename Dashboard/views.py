@@ -293,8 +293,9 @@ def edit_game(request, id):
     if Game.objects.filter(id=id).exists():
         game = Game.objects.get(id=id)
         game.name = request.POST.get('name', game.name)
-        if game.image or request.FILES.get('image'):
-            game.image = request.FILES.get('image', game.image.url)
+        if request.FILES.get('image'):
+            image = game.image if game.image else None
+            game.image = request.FILES.get('image', image)
         game.fee = request.POST.get('fee', game.fee)
         game.type = request.POST.get('type', game.type)
         game.winning_amount = request.POST.get('winning_amount', game.winning_amount)
