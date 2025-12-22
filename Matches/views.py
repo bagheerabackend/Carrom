@@ -32,12 +32,12 @@ async def match_making(request, data: MatchMakingIn):
                     "match_id": match.id,
                     "player1_id": player1_id,
                     "player1_name": match.player1.name,
-                    "player1_avatar_no": match.player1.avatar_no
+                    "player1_avatar_no": match.player1.avatar_no,
+                    "winning_amount": match.winning_amount
                 }
             if (entry_amount) >= game.fee:
                 match.player2 = user
                 match.status = "full"
-                match.winning_amount = game.winning_amount
                 game_fee = await sync_to_async(lambda: match.game.fee)()
                 match.commission_amount = (game_fee * 2) - game.winning_amount
                 await match.asave()
@@ -111,13 +111,14 @@ async def match_making(request, data: MatchMakingIn):
             await sync_to_async(cache.delete)(f"coins_{user.player_id}")
             user.cashback_used = cashback_used
             await user.asave()
-            match = Matches(game=game, player1=user)
+            match = Matches(game=game, player1=user, winning_amount=game.winning_amount)
             await match.asave()
             return 206, {
                 "match_id": match.id,
                 "player1_id": match.player1.player_id,
                 "player1_name": match.player1.name,
-                "player1_avatar_no": match.player1.avatar_no
+                "player1_avatar_no": match.player1.avatar_no,
+                "winning_amount": match.winning_amount
             }
         return 402, {"message": "Insufficient coins"}
     return 404, {"message": "Game does not exist"}
