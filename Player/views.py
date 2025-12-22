@@ -74,11 +74,11 @@ async def send_login_otp(request, data: LoginIn):
         await sync_to_async(cache.set)(f"login-{data.phone}", otp, timeout=300)
         return 200, {"message": "OTP sent to test mobile number"}
     await sync_to_async(cache.set)(f"login-{data.phone}", otp, timeout=60)
-    status = await send_otp_via_twilio(data.phone, otp)
-    if status:
-        return 200, {"message": "OTP sent to mobile number"}
-    await sync_to_async(cache.delete)(f"login-{data.phone}")
-    return 405, {"message": "Error sending OTP"}
+    # status = await send_otp_via_twilio(data.phone, otp)
+    # if status:
+    return 200, {"message": "OTP sent to mobile number"}
+    # await sync_to_async(cache.delete)(f"login-{data.phone}")
+    # return 405, {"message": "Error sending OTP"}
 
 @user_api.post("/login", auth=None, response={200: TokenOut, 404: Message, 405: Message, 406: Message, 409: Message})
 async def login(request, data: LoginVerify):
