@@ -9,6 +9,7 @@ class MatchMakingOut(Schema):
     player1_id: str
     player1_name: str
     player1_avatar_no: int
+    winning_amount: float
 
 class MatchStartingOut(Schema):
     match_id: int
