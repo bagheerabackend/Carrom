@@ -24,13 +24,13 @@ async def send_register_otp(request, data: OtpIn):
         return 404, {"message": "User with this email or phone already exists"}
     if await sync_to_async(cache.get)(f"register-{data.phone}"):
         await sync_to_async(cache.delete)(f"register-{data.phone}")
-    otp = random.randint(1000, 9999)
-    print(otp)
-    await sync_to_async(cache.set)(f"register-{data.phone}", otp, timeout=60)
     if data.phone in ["1111111111", "1111111112"]:
         otp = 1111
         await sync_to_async(cache.set)(f"register-{data.phone}", otp, timeout=300)
         return 200, {"message": "OTP sent to test mobile number"}
+    otp = random.randint(1000, 9999)
+    print(otp)
+    await sync_to_async(cache.set)(f"register-{data.phone}", otp, timeout=60)
     status = await send_otp_via_twilio(data.phone, otp)
     if status:
         return 200, {"message": "OTP sent to mobile number"}
