@@ -487,6 +487,7 @@ def app_settings_view(request):
             'bonus_point': setting.bonus_point,
             'withdrawal_limit': setting.withdrawal_limit,
             'daily_withdraw_count': setting.daily_withdraw_count,
+            'force_update': 'Enabled' if setting.force_update else 'Disabled',
         }
     else:
         context = {
@@ -507,6 +508,7 @@ def add_setting(request):
         setting.bonus_point = request.POST.get('bonus_point', setting.bonus_point)
         setting.withdrawal_limit = request.POST.get('withdrawal_limit', setting.withdrawal_limit)
         setting.daily_withdraw_count = request.POST.get('daily_withdraw_count', setting.daily_withdraw_count)
+        setting.force_update = True if request.POST.get('force_update') == 'true' else False
         cache.delete("app_settings")
         setting.save()
     else:
@@ -518,6 +520,7 @@ def add_setting(request):
         bonus_point = request.POST.get('bonus_point')
         withdrawal_limit = request.POST.get('withdrawal_limit')
         daily_withdraw_count = request.POST.get('daily_withdraw_count')
+        force_update = True if request.POST.get('force_update') == 'true' else False
         setting = AppSettings(
             version = version,
             maintenance_mode = maintenance_mode,
@@ -527,6 +530,7 @@ def add_setting(request):
             bonus_point = bonus_point,
             withdrawal_limit = withdrawal_limit,
             daily_withdraw_count = daily_withdraw_count,
+            force_update = force_update,
         )
         cache.delete("app_settings")
         setting.save()

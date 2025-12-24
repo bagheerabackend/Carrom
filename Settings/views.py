@@ -21,7 +21,8 @@ async def app_settings(request):
         settings_data = {
             "maintenance_mode": settings.maintenance_mode,
             "maintenance_message": settings.maintenance_message,
-            "app_version": settings.version
+            "app_version": settings.version,
+            "force_update": settings.force_update,
         }
         await sync_to_async(cache.set)(cache_key, settings_data, 3600)
         return 200, settings_data
