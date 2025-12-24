@@ -58,7 +58,9 @@ async def match_making(request, data: MatchMakingIn):
                         else:
                             user.coin -= game.fee
                             user.withdrawable_coin -= game.fee
+                await sync_to_async(cache.delete)(f"player_profile_{user.player_id}")
                 await sync_to_async(cache.delete)(f"coins_{user.player_id}")
+                await sync_to_async(cache.delete)(f'game_list_{game.type}_{game.maximum_players}')
                 user.cashback_used = cashback_used
                 await user.asave()
                 player1_id = await sync_to_async(lambda: match.player1.player_id)()
@@ -108,7 +110,9 @@ async def match_making(request, data: MatchMakingIn):
                     else:
                         user.coin -= game.fee
                         user.withdrawable_coin -= game.fee
+            await sync_to_async(cache.delete)(f"player_profile_{user.player_id}")
             await sync_to_async(cache.delete)(f"coins_{user.player_id}")
+            await sync_to_async(cache.delete)(f'game_list_{game.type}_{game.maximum_players}')
             user.cashback_used = cashback_used
             await user.asave()
             match = Matches(game=game, player1=user, winning_amount=game.winning_amount)
